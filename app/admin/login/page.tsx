@@ -41,7 +41,7 @@ export default function AdminLogin() {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-0 sm:p-6 lg:p-12 font-sans text-slate-900">
+        <div className="h-screen w-full bg-slate-50 flex items-center justify-center p-0 sm:p-6 lg:p-12 font-sans text-slate-900 overflow-hidden">
             <motion.div 
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}

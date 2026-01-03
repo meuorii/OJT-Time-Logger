@@ -26,12 +26,11 @@ export default function PremiumRegister() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
-        // ... (API logic remains the same as previous steps)
-        setTimeout(() => setLoading(false), 2000); // Demo delay
+        setTimeout(() => setLoading(false), 2000); 
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-0 sm:p-6 lg:p-12 font-sans text-slate-900">
+        <div className="h-screen w-full bg-slate-50 flex items-center justify-center p-0 sm:p-6 lg:p-12 font-sans text-slate-900 overflow-hidden">
             <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
