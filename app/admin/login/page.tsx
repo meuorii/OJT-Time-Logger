@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Eye, EyeOff, User, Lock, LogIn, AlertCircle, Loader2, ChevronLeft } from 'lucide-react';
 
@@ -24,16 +25,15 @@ export default function AdminLogin() {
                 body: JSON.stringify(formData),
                 headers: { 'Content-Type': 'application/json' },
             });
-
             const data = await res.json();
 
             if (res.ok) {
-                setStatus({ message: 'Login successful! Entering dashboard...', isError: false });
+                setStatus({ message: 'Authentication successful. Redirecting...', isError: false });
                 setTimeout(() => router.push('/admin/dashboard'), 1500);
             } else {
                 setStatus({ message: data.error || 'Invalid credentials', isError: true });
             }
-        } catch (err) {
+        } catch  {
             setStatus({ message: 'Connection error. Please try again.', isError: true });
         } finally {
             setLoading(false);
@@ -41,60 +41,90 @@ export default function AdminLogin() {
     };
 
     return (
-        <div className="h-screen w-full bg-slate-50 flex items-center justify-center p-0 sm:p-6 lg:p-12 font-sans text-slate-900 overflow-hidden">
+        <div className="h-screen w-full bg-[#f8fafc] flex items-center justify-center p-4 sm:p-8 font-sans text-slate-900 overflow-hidden">
             <motion.div 
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5, ease: "easeOut" }}
-                className="w-full max-w-5xl bg-white rounded-none sm:rounded-[2.5rem] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.12)] overflow-hidden flex flex-col md:flex-row-reverse min-h-[650px]"
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                className="w-full max-w-5xl bg-white rounded-4xl sm:rounded-[3rem] shadow-[0_20px_70px_-10px_rgba(0,0,0,0.15)] overflow-hidden flex flex-col md:flex-row-reverse max-h-[90vh] border border-slate-100"
             >
-                {/* LEFT COLUMN: BRANDING (Swapped for variety) */}
-                <div className="hidden md:flex md:w-1/2 bg-slate-900 p-12 flex-col justify-between relative overflow-hidden">
+                {/* BRANDING COLUMN: CCIT BRANDING (Matching Register Page) */}
+                <div className="hidden md:flex md:w-[45%] bg-[#020617] p-12 flex-col justify-between relative overflow-hidden">
+                    
+                    {/* Synchronized Aurora Mesh Gradients */}
+                    <div className="absolute inset-0 pointer-events-none">
+                        <motion.div 
+                            animate={{ 
+                                x: [0, 40, -20, 0],
+                                y: [0, -30, 20, 0],
+                                scale: [1, 1.2, 1],
+                                opacity: [0.2, 0.35, 0.2] 
+                            }}
+                            transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
+                            className="absolute top-[-10%] left-[-10%] w-full h-[70%] bg-emerald-600 rounded-full blur-[120px]" 
+                        />
+                        <div className="absolute bottom-[-15%] right-[-10%] w-[80%] h-[60%] bg-emerald-950/50 rounded-full blur-[110px]" />
+                        <div className="absolute top-[40%] right-[20%] w-40 h-40 bg-emerald-400/10 rounded-full blur-[80px]" />
+                    </div>
+
                     <div className="relative z-10">
-                        <Link href="/" className="inline-flex items-center text-slate-400 hover:text-white transition-colors mb-12 text-sm font-medium gap-2">
-                            <ChevronLeft size={16} /> Back to Student Portal
+                        <Link href="/" className="inline-flex items-center text-slate-400 hover:text-white transition-colors mb-10 text-sm font-medium gap-2 group">
+                            <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> 
+                            Back to Portal
                         </Link>
-                        <h2 className="text-4xl font-bold text-white leading-tight">
-                            Welcome Back, <br /> Administrator.
+
+                        <motion.div 
+                            initial={{ scale: 0.8, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            whileHover={{ scale: 1.05, rotate: -2 }}
+                            transition={{ delay: 0.4 }}
+                            className="w-16 h-16 bg-white rounded-2xl mb-10 flex items-center justify-center shadow-[0_0_30px_rgba(16,185,129,0.3)] border border-emerald-500/20 overflow-hidden"
+                        >
+                            <Image 
+                                src="/ccit-logo.png" 
+                                alt="CCIT Logo" 
+                                width={52} 
+                                height={52} 
+                                className="object-contain" 
+                                priority 
+                            />
+                        </motion.div>
+
+                        <h2 className="text-5xl font-black text-white leading-[1.05] tracking-tighter">
+                            Secure <br /> 
+                            <span className="text-emerald-500 drop-shadow-[0_0_15px_rgba(16,185,129,0.4)]">
+                                Admin Access.
+                            </span>
                         </h2>
-                        <p className="text-slate-400 mt-4 text-lg max-w-xs">
-                            Access your dashboard to monitor student logs and manage OJT records.
+                        <p className="text-slate-400 mt-8 text-lg font-light leading-relaxed">
+                            Please authenticate to manage <span className="text-emerald-400/90 font-medium">student internships</span> and administrative logs.
                         </p>
                     </div>
 
-                    {/* Subtle Abstract Background */}
-                    <div className="absolute top-0 right-0 w-full h-full opacity-20 pointer-events-none">
-                        <div className="absolute top-[-10%] right-[-10%] w-64 h-64 bg-blue-500 rounded-full blur-[120px]" />
-                        <div className="absolute bottom-[-10%] left-[-10%] w-64 h-64 bg-indigo-500 rounded-full blur-[120px]" />
-                    </div>
-                    
-                    <div className="relative z-10 text-slate-500 text-xs font-mono tracking-widest">
-                        SECURE ACCESS PORTAL L-202
+                    <div className="relative z-10">
+                        <p className="text-slate-500 text-[10px] font-mono tracking-[0.3em] uppercase">
+                            Secure Node // Access Level 4
+                        </p>
                     </div>
                 </div>
 
-                {/* RIGHT COLUMN: LOGIN FORM */}
-                <div className="w-full md:w-1/2 p-8 sm:p-12 lg:p-16 flex flex-col justify-center bg-white">
+                {/* LOGIN FORM COLUMN */}
+                <div className="w-full md:w-[55%] p-8 sm:p-12 lg:p-16 flex flex-col justify-center bg-white overflow-y-auto">
                     <div className="max-w-md mx-auto w-full">
-                        <header className="mb-10 text-center md:text-left">
-                            <div className="md:hidden flex justify-center mb-6">
-                                <div className="w-12 h-12 bg-slate-900 rounded-xl flex items-center justify-center shadow-lg">
-                                    <LogIn className="text-white w-6 h-6" />
-                                </div>
-                            </div>
-                            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Sign In</h1>
-                            <p className="text-slate-500 mt-2">Enter your admin credentials to continue.</p>
+                        <header className="mb-10">
+                            <h1 className="text-3xl font-black tracking-tight text-slate-900">Sign In</h1>
+                            <p className="text-slate-500 mt-2 font-medium">Department Management Portal</p>
                         </header>
 
                         <form onSubmit={handleSubmit} className="space-y-6">
                             <AnimatePresence mode="wait">
                                 {status.message && (
                                     <motion.div 
-                                        initial={{ opacity: 0, y: -10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, y: -10 }}
-                                        className={`flex items-center gap-2 p-4 rounded-2xl text-sm font-medium border ${
-                                            status.isError ? 'bg-red-50 border-red-100 text-red-600' : 'bg-blue-50 border-blue-100 text-blue-600'
+                                        initial={{ opacity: 0, x: -20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0, x: 20 }}
+                                        className={`flex items-center gap-3 p-4 rounded-2xl text-sm font-semibold border ${
+                                            status.isError ? 'bg-red-50 border-red-100 text-red-600' : 'bg-emerald-50 border-emerald-100 text-emerald-600'
                                         }`}
                                     >
                                         {status.isError ? <AlertCircle size={18} /> : <Loader2 className="animate-spin" size={18} />}
@@ -103,37 +133,35 @@ export default function AdminLogin() {
                                 )}
                             </AnimatePresence>
 
-                            <div className="space-y-2">
-                                <label className="text-[11px] font-bold uppercase tracking-[0.1em] text-slate-400 ml-1">Username</label>
-                                <div className="relative group">
-                                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-slate-900 transition-colors" size={18} />
+                            <div className="group">
+                                <label className="text-[11px] font-bold uppercase tracking-widest text-slate-400 ml-1 group-focus-within:text-emerald-600 transition-colors">Username</label>
+                                <div className="relative mt-1">
+                                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-emerald-600 transition-colors" size={18} />
                                     <input
                                         type="text"
                                         required
-                                        className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:ring-4 focus:ring-slate-900/5 focus:border-slate-900 transition-all outline-none text-slate-900 placeholder-slate-400"
-                                        placeholder="Enter username"
+                                        className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:ring-[6px] focus:ring-emerald-600/5 focus:border-emerald-600 transition-all outline-none font-medium text-slate-800"
+                                        placeholder="Admin Username"
                                         onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                                     />
                                 </div>
                             </div>
 
-                            <div className="space-y-2">
-                                <div className="flex justify-between items-center ml-1">
-                                    <label className="text-[11px] font-bold uppercase tracking-[0.1em] text-slate-400">Password</label>
-                                </div>
-                                <div className="relative group">
-                                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-slate-900 transition-colors" size={18} />
+                            <div className="group">
+                                <label className="text-[11px] font-bold uppercase tracking-widest text-slate-400 ml-1 group-focus-within:text-emerald-600 transition-colors">Password</label>
+                                <div className="relative mt-1">
+                                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-emerald-600 transition-colors" size={18} />
                                     <input
                                         type={showPassword ? 'text' : 'password'}
                                         required
-                                        className="w-full pl-11 pr-12 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:ring-4 focus:ring-slate-900/5 focus:border-slate-900 transition-all outline-none text-slate-900 placeholder-slate-400"
+                                        className="w-full pl-11 pr-12 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:ring-[6px] focus:ring-emerald-600/5 focus:border-emerald-600 transition-all outline-none font-medium text-slate-800"
                                         placeholder="••••••••"
                                         onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                                     />
                                     <button 
                                         type="button"
                                         onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-900 transition-colors"
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-emerald-600 transition-colors"
                                     >
                                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                                     </button>
@@ -142,20 +170,20 @@ export default function AdminLogin() {
 
                             <motion.button
                                 whileHover={{ scale: 1.01 }}
-                                whileTap={{ scale: 0.99 }}
+                                whileTap={{ scale: 0.98 }}
                                 type="submit"
                                 disabled={loading}
-                                className="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold shadow-2xl shadow-slate-200 hover:bg-black transition-all flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed mt-4"
+                                className="w-full bg-[#0f172a] text-white py-4 rounded-2xl font-black shadow-xl shadow-emerald-900/10 hover:bg-black transition-all flex items-center justify-center gap-3 disabled:opacity-50 mt-4 tracking-tight"
                             >
-                                {loading ? <Loader2 className="animate-spin" size={20} /> : <><LogIn size={20} /> Sign In</>}
+                                {loading ? <Loader2 className="animate-spin" size={20} /> : <><LogIn size={20} /> SIGN IN</>}
                             </motion.button>
                         </form>
 
                         <footer className="mt-10 text-center">
-                            <p className="text-sm text-slate-500">
-                                Don&apos;t have an admin account?{' '}
-                                <Link href="/admin/register" className="text-slate-900 hover:text-blue-600 font-bold transition-colors underline underline-offset-4">
-                                    Register here
+                            <p className="text-sm text-slate-400 font-medium">
+                                New administrator?{' '}
+                                <Link href="/admin/register" className="text-emerald-600 hover:text-emerald-700 font-black transition-colors underline underline-offset-4">
+                                    Create Account
                                 </Link>
                             </p>
                         </footer>

@@ -3,8 +3,9 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion'; // Ensure framer-motion is installed
-import { Eye, EyeOff, User, Mail, Lock, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react'; // Optional: npm i lucide-react
+import Image from 'next/image';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Eye, EyeOff, User, Mail, Lock, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 
 export default function PremiumRegister() {
     const [formData, setFormData] = useState({ username: '', email: '', password: '' });
@@ -13,7 +14,6 @@ export default function PremiumRegister() {
     const [loading, setLoading] = useState(false);
     const router = useRouter();
 
-    // Password strength logic
     const getPasswordStrength = () => {
         if (!formData.password) return 0;
         let score = 0;
@@ -26,57 +26,131 @@ export default function PremiumRegister() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
-        setTimeout(() => setLoading(false), 2000); 
+        setStatus({ message: '', isError: false });
+        
+        try {
+            const res = await fetch('/api/admin/register', {
+                method: 'POST',
+                body: JSON.stringify(formData),
+                headers: { 'Content-Type': 'application/json' },
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setStatus({ message: 'Success! Redirecting to login...', isError: false });
+                setTimeout(() => router.push('/admin/login'), 1500);
+            } else {
+                setStatus({ message: data.error || 'Registration failed', isError: true });
+            }
+        } catch {
+            setStatus({ message: 'Server error. Please try again.', isError: true });
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
-        <div className="h-screen w-full bg-slate-50 flex items-center justify-center p-0 sm:p-6 lg:p-12 font-sans text-slate-900 overflow-hidden">
+        <div className="h-screen w-full bg-[#f8fafc] flex items-center justify-center p-4 sm:p-8 font-sans text-slate-900 overflow-hidden">
             <motion.div 
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, ease: "easeOut" }}
-                className="w-full max-w-5xl bg-white rounded-none sm:rounded-[2.5rem] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] overflow-hidden flex flex-col md:flex-row min-h-175"
+                transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                className="w-full max-w-5xl bg-white rounded-4xl sm:rounded-[3rem] shadow-[0_20px_70px_-10px_rgba(0,0,0,0.15)] overflow-hidden flex flex-col md:flex-row max-h-[90vh] border border-slate-100"
             >
-                {/* LEFT COLUMN: BRANDING (Desktop Only) */}
-                <div className="hidden md:flex md:w-1/2 bg-blue-600 p-12 flex-col justify-between relative overflow-hidden">
+                {/* LEFT COLUMN: CCIT DEPARTMENT BRANDING */}
+                <div className="hidden md:flex md:w-[45%] bg-[#020617] p-12 flex-col justify-between relative overflow-hidden">
+                    
+                    {/* Sophisticated Aurora Mesh Gradients */}
+                    <div className="absolute inset-0 pointer-events-none">
+                        {/* Top Right Main Glow */}
+                        <motion.div 
+                            animate={{ 
+                                scale: [1, 1.2, 1],
+                                opacity: [0.15, 0.25, 0.15] 
+                            }}
+                            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+                            className="absolute top-[-20%] right-[-10%] w-full h-[70%] bg-emerald-600 rounded-full blur-[130px]" 
+                        />
+                        
+                        {/* Bottom Left Deep Support Glow */}
+                        <div className="absolute bottom-[-15%] left-[-20%] w-[80%] h-[60%] bg-emerald-950/40 rounded-full blur-[110px]" />
+                        
+                        {/* Subtle Center Accent Flare */}
+                        <div className="absolute top-[40%] left-[20%] w-40 h-40 bg-emerald-400/10 rounded-full blur-[80px]" />
+                    </div>
+
                     <div className="relative z-10">
-                        <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-xl mb-8 flex items-center justify-center">
-                            <CheckCircle2 className="text-white w-6 h-6" />
-                        </div>
-                        <h2 className="text-4xl font-bold text-white leading-tight">
-                            Streamline your <br /> OJT Management.
+                        <motion.div 
+                            initial={{ scale: 0.8, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            whileHover={{ scale: 1.05, rotate: 2 }}
+                            transition={{ delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                            className="w-16 h-16 bg-white rounded-2xl mb-10 flex items-center justify-center shadow-[0_0_30px_rgba(16,185,129,0.25)] border border-emerald-500/20 overflow-hidden group"
+                        >
+                            <Image 
+                                src="/ccit-logo.png" 
+                                alt="CCIT Logo" 
+                                width={52} 
+                                height={52} 
+                                className="object-contain transition-transform group-hover:scale-110" 
+                                priority 
+                            />
+                        </motion.div>
+
+                        <h2 className="text-5xl font-black text-white leading-[1.05] tracking-tighter">
+                            CCIT <br /> 
+                            <span className="text-emerald-500 drop-shadow-[0_0_15px_rgba(16,185,129,0.4)]">
+                                OJT Portal.
+                            </span>
                         </h2>
-                        <p className="text-blue-100 mt-4 text-lg">
-                            The premium solution for tracking student attendance and professional growth.
+                        
+                        <p className="text-slate-400 mt-8 text-lg font-light leading-relaxed max-w-sm">
+                            Elevating the internship experience through <span className="font-semibold text-emerald-400/90 tracking-tight">intelligent tracking</span> and administrative excellence.
                         </p>
                     </div>
 
-                    {/* Decorative Background Element */}
-                    <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-blue-500 rounded-full blur-3xl opacity-50" />
-                    <div className="absolute top-1/2 right-0 w-64 h-64 bg-indigo-500 rounded-full blur-3xl opacity-30 transform -translate-y-1/2" />
-                    
-                    <div className="relative z-10 text-blue-200 text-sm font-medium">
-                        © 2026 Admin Portal v2.0
+                    <div className="relative z-10">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="flex gap-1.5">
+                                {[1, 2, 3].map(i => (
+                                    <motion.div 
+                                        key={i} 
+                                        initial={i === 1 ? { opacity: 0.5 } : {}}
+                                        animate={i === 1 ? { opacity: [0.5, 1, 0.5] } : {}}
+                                        transition={{ repeat: Infinity, duration: 2 }}
+                                        className={`h-1.5 w-8 rounded-full ${i === 1 ? 'bg-emerald-500' : 'bg-slate-800'}`} 
+                                    />
+                                ))}
+                            </div>
+                            <span className="text-[10px] text-emerald-500/60 font-mono animate-pulse uppercase tracking-[0.2em]">Live Status</span>
+                        </div>
+                        
+                        <div className="space-y-1">
+                            <p className="text-slate-200 text-xs font-bold tracking-widest uppercase">
+                                College of Computer and Information Technology
+                            </p>
+                            <p className="text-slate-500 text-[10px] font-mono tracking-widest">
+                                SYSTEM CORE V2.6 // SECURE_NODE
+                            </p>
+                        </div>
                     </div>
                 </div>
 
                 {/* RIGHT COLUMN: REGISTRATION FORM */}
-                <div className="w-full md:w-1/2 p-8 sm:p-12 lg:p-16 flex flex-col justify-center">
+                <div className="w-full md:w-[55%] p-8 sm:p-12 flex flex-col justify-center overflow-y-auto">
                     <div className="max-w-md mx-auto w-full">
-                        <header className="mb-10">
-                            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Create Account</h1>
-                            <p className="text-slate-500 mt-2">Get started with your administrative access.</p>
+                        <header className="mb-8">
+                            <h1 className="text-3xl font-black tracking-tight text-slate-900">Register</h1>
+                            <p className="text-slate-500 mt-2 font-medium">Create your department admin account.</p>
                         </header>
 
                         <form onSubmit={handleSubmit} className="space-y-5">
-                            {/* Status Messages */}
-                            <AnimatePresence>
+                            <AnimatePresence mode='wait'>
                                 {status.message && (
                                     <motion.div 
-                                        initial={{ opacity: 0, height: 0 }}
-                                        animate={{ opacity: 1, height: 'auto' }}
-                                        exit={{ opacity: 0, height: 0 }}
-                                        className={`flex items-center gap-2 p-4 rounded-xl text-sm font-medium border ${
+                                        initial={{ opacity: 0, x: -20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0, x: 20 }}
+                                        className={`flex items-center gap-3 p-4 rounded-2xl text-sm font-semibold border ${
                                             status.isError ? 'bg-red-50 border-red-100 text-red-600' : 'bg-emerald-50 border-emerald-100 text-emerald-600'
                                         }`}
                                     >
@@ -86,69 +160,57 @@ export default function PremiumRegister() {
                                 )}
                             </AnimatePresence>
 
-                            {/* Username Input */}
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold uppercase tracking-wider text-slate-500 ml-1">Username</label>
-                                <div className="relative group">
-                                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={18} />
+                            <div className="group">
+                                <label className="text-[11px] font-bold uppercase tracking-widest text-slate-400 ml-1 group-focus-within:text-emerald-600 transition-colors">Username</label>
+                                <div className="relative mt-1">
+                                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-emerald-600 transition-colors" size={18} />
                                     <input
                                         type="text"
                                         required
-                                        className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:ring-4 focus:ring-blue-500/5 focus:border-blue-600 transition-all outline-none"
-                                        placeholder="admin_dev"
+                                        className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:ring-[6px] focus:ring-emerald-600/5 focus:border-emerald-600 transition-all outline-none font-medium text-slate-800"
+                                        placeholder="Admin Username"
                                         onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                                     />
                                 </div>
                             </div>
 
-                            {/* Email Input */}
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold uppercase tracking-wider text-slate-500 ml-1">Email</label>
-                                <div className="relative group">
-                                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={18} />
+                            <div className="group">
+                                <label className="text-[11px] font-bold uppercase tracking-widest text-slate-400 ml-1 group-focus-within:text-emerald-600 transition-colors">Email Address</label>
+                                <div className="relative mt-1">
+                                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-emerald-600 transition-colors" size={18} />
                                     <input
                                         type="email"
                                         required
-                                        className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:ring-4 focus:ring-blue-500/5 focus:border-blue-600 transition-all outline-none"
-                                        placeholder="name@company.com"
+                                        className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:ring-[6px] focus:ring-emerald-600/5 focus:border-emerald-600 transition-all outline-none font-medium text-slate-800"
+                                        placeholder="dept@institution.edu"
                                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                     />
                                 </div>
                             </div>
 
-                            {/* Password Input */}
-                            <div className="space-y-1.5">
-                                <div className="flex justify-between items-center ml-1">
-                                    <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Password</label>
-                                    <span className="text-[10px] font-bold uppercase text-slate-400">Strength: {['Weak', 'Fair', 'Strong'][getPasswordStrength()]}</span>
+                            <div className="group">
+                                <div className="flex justify-between items-end mb-1">
+                                    <label className="text-[11px] font-bold uppercase tracking-widest text-slate-400 ml-1 group-focus-within:text-emerald-600 transition-colors">Password</label>
+                                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${['text-red-400', 'text-orange-400', 'text-emerald-500'][getPasswordStrength()]}`}>
+                                        {['WEAK', 'FAIR', 'STRONG'][getPasswordStrength()]}
+                                    </span>
                                 </div>
-                                <div className="relative group">
-                                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={18} />
+                                <div className="relative mt-1">
+                                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-emerald-600 transition-colors" size={18} />
                                     <input
                                         type={showPassword ? 'text' : 'password'}
                                         required
-                                        className="w-full pl-11 pr-12 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:ring-4 focus:ring-blue-500/5 focus:border-blue-600 transition-all outline-none"
+                                        className="w-full pl-11 pr-12 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:ring-[6px] focus:ring-emerald-600/5 focus:border-emerald-600 transition-all outline-none font-medium text-slate-800"
                                         placeholder="••••••••"
                                         onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                                     />
                                     <button 
                                         type="button"
                                         onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-emerald-600 transition-colors"
                                     >
                                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                                     </button>
-                                </div>
-                                {/* Password Strength Bar */}
-                                <div className="flex gap-1 mt-2 px-1">
-                                    {[0, 1, 2].map((step) => (
-                                        <div 
-                                            key={step} 
-                                            className={`h-1 flex-1 rounded-full transition-all duration-500 ${
-                                                getPasswordStrength() > step ? 'bg-blue-600' : 'bg-slate-200'
-                                            }`} 
-                                        />
-                                    ))}
                                 </div>
                             </div>
 
@@ -157,17 +219,17 @@ export default function PremiumRegister() {
                                 whileTap={{ scale: 0.98 }}
                                 type="submit"
                                 disabled={loading}
-                                className="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold shadow-xl shadow-slate-200 hover:bg-black transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                                className="w-full bg-[#0f172a] text-white py-4 rounded-2xl font-black shadow-xl shadow-emerald-900/10 hover:bg-black transition-all flex items-center justify-center gap-2 disabled:opacity-50 mt-4 tracking-tight"
                             >
-                                {loading ? <Loader2 className="animate-spin" size={20} /> : 'Create Account'}
+                                {loading ? <Loader2 className="animate-spin" size={20} /> : 'SIGN UP'}
                             </motion.button>
                         </form>
 
                         <footer className="mt-8 text-center">
-                            <p className="text-sm text-slate-500 font-medium">
-                                Already have an account?{' '}
-                                <Link href="/admin/login" className="text-blue-600 hover:text-blue-700 font-bold transition-colors underline underline-offset-4">
-                                    Log in
+                            <p className="text-sm text-slate-400 font-medium">
+                                Already registered?{' '}
+                                <Link href="/admin/login" className="text-emerald-600 hover:text-emerald-700 font-black transition-colors underline underline-offset-4">
+                                    Log In
                                 </Link>
                             </p>
                         </footer>
