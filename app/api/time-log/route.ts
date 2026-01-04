@@ -2,6 +2,26 @@ import dbConnect from '@/lib/mongodb';
 import { TimeLog } from '@/models/TimeLog';
 import { NextResponse } from 'next/server';
 
+export async function GET() {
+    try {
+        await dbConnect();
+
+        const startOfToday = new Date();
+        startOfToday.setHours(0, 0, 0, 0);
+
+        const endOfToday = new Date();
+        endOfToday.setHours(23, 59, 59, 999);
+
+        const logs = await TimeLog.find({
+            createdAt: { $gte: startOfToday, $lte: endOfToday }
+        }).sort({ createdAt: -1 });;
+
+        return NextResponse.json({ data: logs })
+    } catch {
+        return NextResponse.json({ error: 'Failed to fetch time logs' }, { status: 500})
+    }
+}
+
 export async function POST(req: Request) {
     try {
         await dbConnect();
