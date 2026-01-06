@@ -48,7 +48,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         <div className="w-6 h-6 bg-emerald-500 rounded-md" />
                     </div>
                     <div className="flex flex-col">
-                        <span className="text-white font-black tracking-tighter text-lg leading-none">CCIT CORE</span>
+                        <span className="text-white font-black tracking-tighter text-lg leading-none">CCIT</span>
                         <span className="text-[10px] text-emerald-500 font-bold tracking-[0.2em] uppercase mt-1">Admin Panel</span>
                     </div>
                 </div>
