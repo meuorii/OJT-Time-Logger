@@ -54,3 +54,26 @@ export async function PATCH(req: Request) {
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500})
     }
 }
+
+export async function DELETE(req: Request) {
+    try {
+        await dbConnect();
+
+        const { searchParams } = new URL(req.url);
+        const id = searchParams.get("id");
+
+        if (!id) {
+            return NextResponse.json({ error: 'Student ID (_id) is required for deletion'}, { status: 400 })
+        }
+
+        const deleteStudent = await Student.findByIdAndDelete(id);
+
+        if (!deleteStudent) {
+            return NextResponse.json({ error: 'Student not found' }, { status: 404 });
+        }
+
+        return NextResponse.json({ message: 'Student deleted successfully' }, { status: 200 });
+    } catch {
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    }
+}

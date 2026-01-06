@@ -24,6 +24,8 @@ export default function OJTManagement() {
     const [formData, setFormData] = useState({ fullName: '', studentId: '' });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState('');
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [studentToDelete, setStudentToDelete] = useState<IStudent | null>(null);
 
     const fetchStudents = useCallback(async () => {
         setLoading(true);
@@ -83,6 +85,27 @@ export default function OJTManagement() {
             setIsSubmitting(false);
         }
     };
+
+    const confirmDelete =(student: IStudent) => {
+        setStudentToDelete(student);
+        setIsDeleteModalOpen(true);
+    }
+
+    const handleDelete = async () => {
+        if (!studentToDelete) return;
+
+        const toastId = toast.loading('Deleting student...');
+        try {
+            const res = await fetch(`/api/students?id=${studentToDelete._id}`, { method: 'DELETE'});
+            if (!res.ok) throw new Error('Failed to delete student');
+
+            toast.success("Student removed", { id: toastId});
+            setIsDeleteModalOpen(false);
+            fetchStudents();
+        } catch  {
+            toast.error('Failed to delete student', { id: toastId });
+        }
+    }
 
     const filteredStudents = students.filter(s => 
         s.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -150,7 +173,7 @@ export default function OJTManagement() {
                                             >
                                                 <Edit2 size={18} />
                                             </button>
-                                            <button className="p-2 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-xl transition-all">
+                                            <button onClick={() => confirmDelete(student)} className="p-2 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-xl transition-all">
                                                 <Trash2 size={18} />
                                             </button>
                                         </td>
@@ -249,6 +272,42 @@ export default function OJTManagement() {
                                         </button>
                                     </div>
                                 </form>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+
+                {isDeleteModalOpen && (
+                    <div className="fixed inset-0 z-110 flex items-center justify-center p-4">
+                        <motion.div 
+                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                            onClick={() => setIsDeleteModalOpen(false)}
+                            className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm"
+                        />
+                        <motion.div 
+                            initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+                            className="bg-white w-full max-w-sm rounded-4xl shadow-2xl relative overflow-hidden p-8 text-center"
+                        >
+                            <div className="w-16 h-16 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <Trash2 size={32} />
+                            </div>
+                            <h3 className="text-xl font-black text-slate-900 uppercase">Confirm Delete</h3>
+                            <p className="text-slate-500 font-medium mt-2">
+                                Are you sure you want to remove <span className="text-slate-900 font-bold">{studentToDelete?.fullName}</span>? This cannot be undone.
+                            </p>
+                            <div className="flex gap-3 mt-8">
+                                <button 
+                                    onClick={() => setIsDeleteModalOpen(false)}
+                                    className="flex-1 px-6 py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-50 transition-all"
+                                >
+                                    BACK
+                                </button>
+                                <button 
+                                    onClick={handleDelete}
+                                    className="flex-1 bg-rose-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-rose-200 hover:bg-rose-700 transition-all"
+                                >
+                                    DELETE
+                                </button>
                             </div>
                         </motion.div>
                     </div>
