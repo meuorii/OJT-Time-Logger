@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
     UserPlus, Search, Edit2, Trash2, X, Check, Loader2, AlertCircle
 } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 
 interface IStudent {
     _id: string;
@@ -58,7 +59,6 @@ export default function OJTManagement() {
         setError('');
 
         const method = editingStudent ? 'PATCH' : 'POST';
-        // Note: Make sure your API handles PATCH for editing
         const endpoint = '/api/students';
 
         try {
@@ -71,11 +71,14 @@ export default function OJTManagement() {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Something went wrong');
 
+            toast.success(editingStudent ? 'Student updated successfully' : 'Student added successfully')
+
             setIsModalOpen(false);
             fetchStudents();
         } catch (err: unknown) {
             const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
-            setError(errorMessage)
+            setError(errorMessage);
+            toast.error(errorMessage);
         } finally {
             setIsSubmitting(false);
         }
@@ -209,8 +212,8 @@ export default function OJTManagement() {
                                         <input 
                                             required
                                             type="text"
-                                            placeholder="e.g. 2021-00001"
-                                            className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold"
+                                            placeholder="Enter Student ID"
+                                            className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-slate-500 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold"
                                             value={formData.studentId}
                                             onChange={(e) => setFormData({...formData, studentId: e.target.value})}
                                         />
@@ -221,8 +224,8 @@ export default function OJTManagement() {
                                         <input 
                                             required
                                             type="text"
-                                            placeholder="First M. Last"
-                                            className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold"
+                                            placeholder="Enter Student Full Name"
+                                            className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-slate-500 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold"
                                             value={formData.fullName}
                                             onChange={(e) => setFormData({...formData, fullName: e.target.value})}
                                         />

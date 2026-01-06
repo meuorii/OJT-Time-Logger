@@ -33,3 +33,24 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500})
     }
 }
+
+export async function PATCH(req: Request) {
+    try {
+        await dbConnect();
+        const { id, studentId, fullName } = await req.json();
+
+        if (!id) {
+            return NextResponse.json({ error: 'Student ID (_id) is required for update' }, { status: 400 });
+        }
+
+        const updateStudent = await Student.findByIdAndUpdate(id, { studentId, fullName }, { new: true, runValidators: true });
+
+        if (!updateStudent) {
+            return NextResponse.json({ error: 'Student not found' }, { status: 404 })
+        }
+
+        return NextResponse.json({ message: 'Student updated successfully', data: updateStudent }, { status: 200 })
+    } catch {
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500})
+    }
+}
