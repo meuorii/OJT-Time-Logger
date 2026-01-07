@@ -161,7 +161,8 @@ export default function OJTManagement() {
                                 filteredStudents.map((student) => (
                                     <tr key={student._id} className="hover:bg-slate-50/50 transition-colors group">
                                         <td className="px-8 py-5">
-                                            <span className="font-mono text-sm font-bold text-slate-900 bg-slate-100 px-3 py-1 rounded-lg">
+                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-100 shadow-sm">
+                                                <span className="w-1 h-1 mr-1.5 rounded-full bg-emerald-500"></span>
                                                 {student.studentId}
                                             </span>
                                         </td>
