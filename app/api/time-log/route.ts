@@ -1,4 +1,5 @@
 import dbConnect from '@/lib/mongodb';
+import { Student } from '@/models/Student';
 import { TimeLog } from '@/models/TimeLog';
 import { NextResponse } from 'next/server';
 
@@ -6,44 +7,79 @@ export async function GET() {
     try {
         await dbConnect();
 
-        const startOfToday = new Date();
-        startOfToday.setHours(0, 0, 0, 0);
+        const today = new Date().toLocaleDateString('en-CA');
 
-        const endOfToday = new Date();
-        endOfToday.setHours(23, 59, 59, 999);
-
-        const logs = await TimeLog.find({
-            createdAt: { $gte: startOfToday, $lte: endOfToday }
-        }).sort({ createdAt: -1 });;
-
-        return NextResponse.json({ data: logs })
+        const logs = await TimeLog.find({ date: today }).sort({ updatedAt: -1 });
+        return NextResponse.json({ success: true, data: logs});
     } catch {
-        return NextResponse.json({ error: 'Failed to fetch time logs' }, { status: 500})
+        return NextResponse.json({ error: 'Failed to fetch logs' }, { status: 500});
     }
 }
 
 export async function POST(req: Request) {
     try {
         await dbConnect();
-        const { studentId, fullName } = await req.json();
+        const { studentId } = await req.json();
 
-        const today = new Date().toISOString().split('T')[0];
-        const existingLog = await TimeLog.findOne({ studentId, date: today });
-        if (!existingLog) {
-            const newLog = new TimeLog ({ studentId, fullName, date: today, timeIn: new Date(), })
-            return NextResponse.json({ message: 'Time In Logged Successfully', data: newLog })
+        const studentRecord = await Student.findOne({ studentId });
+        if (!studentRecord) {
+            return NextResponse.json({ error: 'Student not Found' }, { status: 404 });
         }
 
-        if (!existingLog.timeOut) {
-            existingLog.timeOut = new Date();
-            await existingLog.save();
-            return NextResponse.json({ message: 'Time Out Logged Successfully', data: existingLog })
+        const now = new Date();
+        const hour = now.getHours();
+        const today = now.toLocaleDateString('en-CA');
+        const currentTime = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true});
+
+        let log = await TimeLog.findOne({ student: studentRecord._id, date: today });
+
+        if (!log) {
+            const isAm = hour < 12;
+            log = new TimeLog({
+                student: studentRecord._id,
+                studentId: studentRecord.studentId,
+                fullName: studentRecord.fullName,
+                date: today, [isAm ? 'amIn' : 'pmIn']: currentTime,
+                status: 'Incomplete'
+            })
+
+            await log.save();
+            return NextResponse.json({ messgae: `Success: ${isAm ? 'AM' : 'PM'} In Logged.`, data: log });
         }
 
-        return NextResponse.json({ message: 'You have already logged your Attendance for today.' }, { status: 400 });
+        let message = '';
 
-    } catch (error: unknown ) {
-        const msg = error instanceof Error ? error.message : 'Internal Server Error';
-        return NextResponse.json({ message: msg }, { status: 500 })
+        if (log.amIn && !log.amOut) {
+            log.amOut = currentTime
+            message = 'AM Out Logged successfully';
+        } else if (!log.pmIn) {
+            if (hour < 12) return NextResponse.json({ error: 'PM Shift starts at 12:00 PM onwards.' }, { status: 400 });
+            log.pmIn = currentTime;
+            message = 'PM`In logged successfully.';
+        } else if (!log.pmOut) {
+            log.pmOut = currentTime;
+            log.status = 'Complete';
+            message = 'PM Out Logged. Regular Shift Completed';
+        } else if ( hour >= 17) {
+            if (!log.pmOut) return NextResponse.json({ error: 'Finish PM Shift first' }, { status: 400 });
+
+            if (!log.otIn) {
+                log.otIn = currentTime;
+                message = 'Overtime In Started';
+            } else if (!log.otOut) {
+                log.otOut = currentTime;
+                message = 'Overtime Out Finished';
+            } else {
+                return NextResponse.json({ error: 'You have already completed all the logs for today.' }, { status: 400});
+            }
+        } else {
+            return NextResponse.json({ error: 'Invalid log sequence or slot already filled.'}, {status: 400});
+        }
+
+        await log.save();
+        return NextResponse.json({ message, data: log });
+
+    } catch {
+        return NextResponse.json({ error: 'Server Error '}, { status: 500 });
     }
 }
