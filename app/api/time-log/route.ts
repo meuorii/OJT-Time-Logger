@@ -16,6 +16,22 @@ export async function GET() {
     }
 }
 
+const calculateDuration = (timeIn?: string, timeOut?: string, logDate?: string): number => {
+    if (!timeIn || !timeOut) return 0;
+
+    try {
+        const anchorDate = logDate || "2026-01-01";
+        const start = new Date(`${anchorDate} ${timeIn}`);
+        const end = new Date(`${anchorDate} ${timeOut}`);
+        
+        let diff = (end.getTime() - start.getTime()) / (3600000);
+        if (diff < 0) diff += 24;
+        return diff
+    } catch {
+        return 0;
+    }
+}
+
 export async function POST(req: Request) {
     try {
         await dbConnect();
@@ -32,6 +48,7 @@ export async function POST(req: Request) {
         const currentTime = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true});
 
         let log = await TimeLog.findOne({ student: studentRecord._id, date: today });
+        let message = '';
 
         if (!log) {
             const isAm = hour < 12;
@@ -42,14 +59,9 @@ export async function POST(req: Request) {
                 date: today, [isAm ? 'amIn' : 'pmIn']: currentTime,
                 status: 'Incomplete'
             })
-
-            await log.save();
-            return NextResponse.json({ messgae: `Success: ${isAm ? 'AM' : 'PM'} In Logged.`, data: log });
-        }
-
-        let message = '';
-
-        if (log.amIn && !log.amOut) {
+            message = `Success ${isAm ? 'AM' : 'PM'} In Logged.`
+        } else {
+            if (log.amIn && !log.amOut) {
             log.amOut = currentTime
             message = 'AM Out Logged successfully';
         } else if (!log.pmIn) {
@@ -75,6 +87,14 @@ export async function POST(req: Request) {
         } else {
             return NextResponse.json({ error: 'Invalid log sequence or slot already filled.'}, {status: 400});
         }
+    }
+
+        const amHours = calculateDuration(log.amIn, log.amOut);
+        const pmHours = calculateDuration(log.pmIn, log.pmOut);
+        const otHours = calculateDuration(log.otIn, log.otOut);
+
+        const totalDecimal = amHours + pmHours + otHours;
+        log.totalHours = totalDecimal.toFixed(2);
 
         await log.save();
         return NextResponse.json({ message, data: log });
