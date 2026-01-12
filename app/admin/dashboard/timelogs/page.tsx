@@ -175,7 +175,6 @@ export default function AttendancePage() {
             const h = Math.floor(totalSeconds / 3600);
             const m = Math.floor((totalSeconds % 3600) / 60);
             const s = totalSeconds % 60;
-            
             return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
         };
 
@@ -195,15 +194,18 @@ export default function AttendancePage() {
             }
         });
 
-        const activeInTimeStr = (!log.amOut && log.amIn) ? log.amIn : 
-                                (!log.pmOut && log.pmIn) ? log.pmIn : 
-                                (!log.otOut && log.otIn) ? log.otIn : null;
+        if (log.status !== 'Complete') {
+            const activeInTimeStr = 
+                (log.otIn && !log.otOut) ? log.otIn : 
+                (log.pmIn && !log.pmOut) ? log.pmIn : 
+                (log.amIn && !log.amOut) ? log.amIn : null;
 
-        if (activeInTimeStr) {
-            const activeInDate = parseTimeToDate(activeInTimeStr);
-            if (activeInDate) {
-                // Gumamit ng Date.now() para makuha ang absolute current time ng computer
-                totalMs += (Date.now() - activeInDate.getTime());
+            if (activeInTimeStr) {
+                const activeInDate = parseTimeToDate(activeInTimeStr);
+                if (activeInDate) {
+                    const diff = Date.now() - activeInDate.getTime();
+                    if (diff > 0) totalMs += diff;
+                }
             }
         }
 
