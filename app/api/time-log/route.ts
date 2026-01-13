@@ -1,14 +1,18 @@
 import dbConnect from '@/lib/mongodb';
 import { Student } from '@/models/Student';
 import { TimeLog } from '@/models/TimeLog';
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 
-export async function GET() {
+export async function GET(req: NextRequest) { 
     try {
         await dbConnect();
-        const logs = await TimeLog.find({}).sort({ date: -1 });
+        const { searchParams } = new URL(req.url);
+        const filterDate = searchParams.get('date');
+        const query = filterDate ? { date: filterDate } : {};
+        const logs = await TimeLog.find(query).sort({ date: -1, createdAt: -1 });
         return NextResponse.json({ data: logs });
-    } catch {
+    } catch (error) {
+        console.error("Fetch Error:", error);
         return NextResponse.json({ error: "Failed to fetch logs" }, { status: 500 });
     }
 }

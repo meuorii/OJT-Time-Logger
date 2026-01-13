@@ -69,15 +69,19 @@ export default function AttendancePage() {
 
     const loadData = async () => {
         try {
+            const today = new Date().toLocaleDateString('en-CA'); 
+
             const [resStudents, resLogs] = await Promise.all([
                 fetch('/api/students'),
-                fetch('/api/time-log')
+                fetch(`/api/time-log?date=${today}`)
             ]);
+
             const sData = await resStudents.json();
             const lData = await resLogs.json();
+            
             setStudents(sData.data || []);
             setTodayLogs(lData.data || []);
-        } catch  {
+        } catch {
             toast.error("Failed to sync data with server");
         } finally {
             setFetching(false);
