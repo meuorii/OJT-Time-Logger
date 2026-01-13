@@ -6,13 +6,10 @@ import { NextResponse } from 'next/server';
 export async function GET() {
     try {
         await dbConnect();
-
-        const today = new Date().toLocaleDateString('en-CA');
-
-        const logs = await TimeLog.find({ date: today }).sort({ updatedAt: -1 });
-        return NextResponse.json({ success: true, data: logs});
+        const logs = await TimeLog.find({}).sort({ date: -1 });
+        return NextResponse.json({ data: logs });
     } catch {
-        return NextResponse.json({ error: 'Failed to fetch logs' }, { status: 500});
+        return NextResponse.json({ error: "Failed to fetch logs" }, { status: 500 });
     }
 }
 

@@ -1,88 +1,91 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
-    Users, LogIn, UserX, Clock, Zap, Calendar, RefreshCcw, Loader2 
+    Users, LogIn, Zap, Calendar, RefreshCcw, Loader2, Hourglass, TrendingUp 
 } from 'lucide-react';
-
-// 1. Define Interfaces to fix "Unexpected any"
-interface IStudent {
-    _id: string;
-    fullName: string;
-    studentId: string;
-}
 
 interface ITimeLog {
     _id: string;
     studentId: string;
     fullName: string;
     date: string;
-    timeIn: string;
-    timeOut?: string;
+    amIn?: string; amOut?: string;
+    pmIn?: string; pmOut?: string;
+    otIn?: string; otOut?: string;
+    totalHours?: string;
 }
 
 export default function AdminOverview() {
     const [currentTime, setCurrentTime] = useState(new Date());
     const [loading, setLoading] = useState(true);
+    const [allLogs, setAllLogs] = useState<ITimeLog[]>([]);
+    const [activeOjtIndex, setActiveOjtIndex] = useState(0);
     const [stats, setStats] = useState({
         totalOJTs: 0,
         loggedInToday: 0,
-        lateToday: 0,
-        totalHoursToday: 0,
-        overtimeToday: 0
+        overallHours: 0,
+        overallOT: 0
     });
 
-    // Clock Timer
+    // logic to group logs by Student and get total per student
+    const studentAccumulatedHours = useMemo(() => {
+        const map = new Map<string, { name: string, total: number }>();
+        allLogs.forEach(log => {
+            const current = map.get(log.studentId) || { name: log.fullName, total: 0 };
+            map.set(log.studentId, {
+                name: log.fullName,
+                total: current.total + parseFloat(log.totalHours || '0')
+            });
+        });
+        return Array.from(map.values());
+    }, [allLogs]);
+
+    // Rolling animation timer
     useEffect(() => {
-        const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-        return () => clearInterval(timer);
-    }, []);
+        if (studentAccumulatedHours.length > 0) {
+            const interval = setInterval(() => {
+                setActiveOjtIndex((prev) => (prev + 1) % studentAccumulatedHours.length);
+            }, 4000); 
+            return () => clearInterval(interval);
+        }
+    }, [studentAccumulatedHours]);
 
     const fetchData = useCallback(async () => {
         setLoading(true);
         try {
             const [studentRes, logRes] = await Promise.all([
                 fetch('/api/students'),
-                fetch('/api/time-log')
+                fetch('/api/time-log') 
             ]);
 
             const students = await studentRes.json();
-            const logs = await logRes.json();
+            const logsData = await logRes.json();
 
-            // 2. Assign proper types to the lists
-            const studentList: IStudent[] = students.data || [];
-            const logList: ITimeLog[] = logs.data || [];
+            const logList: ITimeLog[] = logsData.data || [];
+            const todayStr = new Date().toLocaleDateString('en-CA');
 
-            // Calculate Stats
-            const totalOJTs = studentList.length;
-            const loggedInToday = logList.length;
+            const logsToday = logList.filter(log => log.date === todayStr);
 
-            // 3. Updated Filter logic with ITimeLog type
-            const lateToday = logList.filter((log: ITimeLog) => {
-                const timeIn = new Date(log.timeIn);
-                // Late if after 8:00 AM
-                return timeIn.getHours() >= 8 && timeIn.getMinutes() > 0;
-            }).length;
+            let totalHours = 0;
+            let totalOT = 0;
 
-            // 4. Updated forEach logic with ITimeLog type
-            let totalMins = 0;
-            logList.forEach((log: ITimeLog) => {
-                if (log.timeIn && log.timeOut) {
-                    const start = new Date(log.timeIn).getTime();
-                    const end = new Date(log.timeOut).getTime();
-                    totalMins += (end - start) / (1000 * 60);
+            logList.forEach(log => {
+                const h = parseFloat(log.totalHours || '0');
+                totalHours += h;
+                if (log.otIn && log.otOut) {
+                    // Calculating OT (anything beyond 8h is counted as OT in this logic)
+                    totalOT += (h > 8 ? h - 8 : 0); 
                 }
             });
 
-            const totalHours = Math.floor(totalMins / 60);
-
+            setAllLogs(logList);
             setStats({
-                totalOJTs,
-                loggedInToday,
-                lateToday,
-                totalHoursToday: totalHours,
-                overtimeToday: totalHours > 8 ? totalHours - 8 : 0
+                totalOJTs: students.data?.length || 0,
+                loggedInToday: logsToday.length,
+                overallHours: Number(totalHours.toFixed(2)),
+                overallOT: Number(totalOT.toFixed(2))
             });
 
         } catch (error) {
@@ -94,14 +97,16 @@ export default function AdminOverview() {
 
     useEffect(() => {
         fetchData();
+        const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+        return () => clearInterval(timer);
     }, [fetchData]);
 
+    // Base data for the 4 static cards
     const statCards = [
-        { label: 'Total OJTs', value: stats.totalOJTs, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
-        { label: 'Logged In Today', value: stats.loggedInToday, icon: LogIn, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-        { label: 'Late Today', value: stats.lateToday, icon: UserX, color: 'text-rose-600', bg: 'bg-rose-50' },
-        { label: 'OJT Hours Today', value: `${stats.totalHoursToday}h`, icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50' },
-        { label: 'Overtime Today', value: `${stats.overtimeToday}h`, icon: Zap, color: 'text-purple-600', bg: 'bg-purple-50' },
+        { label: 'Registered OJTs', value: stats.totalOJTs, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
+        { label: 'Active Today', value: stats.loggedInToday, icon: LogIn, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+        { label: 'Overall Total Hours', value: `${stats.overallHours}h`, icon: TrendingUp, color: 'text-amber-600', bg: 'bg-amber-50' },
+        { label: 'Total Accumulated OT', value: `${stats.overallOT}h`, icon: Zap, color: 'text-purple-600', bg: 'bg-purple-50' },
     ];
 
     return (
@@ -114,10 +119,10 @@ export default function AdminOverview() {
                     <button 
                         onClick={fetchData}
                         disabled={loading}
-                        className="flex items-center gap-2 mt-2 text-slate-500 hover:text-emerald-600 transition-colors font-bold text-xs uppercase tracking-widest disabled:opacity-50"
+                        className="flex items-center gap-2 mt-2 text-slate-500 hover:text-emerald-600 transition-colors font-bold text-xs uppercase tracking-widest"
                     >
                         {loading ? <Loader2 size={14} className="animate-spin" /> : <RefreshCcw size={14} />}
-                        Sync System Data
+                        Sync Historical Data
                     </button>
                 </div>
 
@@ -136,6 +141,7 @@ export default function AdminOverview() {
                 </div>
             </header>
 
+            {/* Grid updated to 5 columns on XL screens */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5">
                 {statCards.map((stat, index) => (
                     <motion.div
@@ -143,9 +149,9 @@ export default function AdminOverview() {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.1 }}
-                        className="bg-white p-6 rounded-4xl border border-slate-100 shadow-sm relative overflow-hidden group"
+                        className="bg-white p-6 rounded-4xl border border-slate-100 shadow-sm"
                     >
-                        <div className={`w-12 h-12 rounded-2xl ${stat.bg} ${stat.color} flex items-center justify-center mb-4 transition-transform group-hover:scale-110`}>
+                        <div className={`w-12 h-12 rounded-2xl ${stat.bg} ${stat.color} flex items-center justify-center mb-4`}>
                             <stat.icon size={22} />
                         </div>
                         <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">{stat.label}</p>
@@ -154,19 +160,69 @@ export default function AdminOverview() {
                         </h3>
                     </motion.div>
                 ))}
+
+                {/* 5TH CARD: OJT Students Total Hours with Rolling Animation */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                    className="bg-white p-6 rounded-4xl border border-slate-100 shadow-sm overflow-hidden relative"
+                >
+                    <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mb-4">
+                        <Hourglass size={22} />
+                    </div>
+                    <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">Student Total Hours</p>
+                    
+                    <div className="h-8 relative">
+                        <AnimatePresence mode="wait">
+                            {studentAccumulatedHours.length > 0 ? (
+                                <motion.div
+                                    key={studentAccumulatedHours[activeOjtIndex].name}
+                                    initial={{ y: 20, opacity: 0 }}
+                                    animate={{ y: 0, opacity: 1 }}
+                                    exit={{ y: -20, opacity: 0 }}
+                                    transition={{ duration: 0.5 }}
+                                    className="absolute inset-0"
+                                >
+                                    <h3 className="text-xl font-black text-slate-900 tracking-tight truncate">
+                                        {studentAccumulatedHours[activeOjtIndex].total.toFixed(2)}h
+                                    </h3>
+                                    <p className="text-[9px] font-bold text-emerald-600 uppercase truncate">
+                                        {studentAccumulatedHours[activeOjtIndex].name}
+                                    </p>
+                                </motion.div>
+                            ) : (
+                                <h3 className="text-xl font-black text-slate-900 tracking-tight">0.00h</h3>
+                            )}
+                        </AnimatePresence>
+                    </div>
+                </motion.div>
             </div>
 
             <div className="w-full bg-white rounded-[3rem] border border-slate-100 p-8 shadow-sm">
                 <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">System Logs</h2>
-                    <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">Live Connection</span>
+                    <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">Recent Historical Activity</h2>
+                    <span className="text-[10px] font-bold text-slate-400 border border-slate-200 px-3 py-1 rounded-full uppercase tracking-tighter">Synced Database</span>
                 </div>
                 
-                <div className="h-48 border-2 border-dashed border-slate-100 rounded-4xl flex items-center justify-center flex-col text-slate-400">
-                    <div className="animate-pulse bg-slate-50 p-4 rounded-full mb-3">
-                        <Zap size={24} className="text-slate-200" />
-                    </div>
-                    <p className="text-sm font-medium">Real-time attendance feed will appear here.</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {allLogs.slice(0, 6).map((log) => (
+                        <div key={log._id} className="p-5 rounded-3xl bg-slate-50 border border-slate-100 hover:border-emerald-200 transition-all group">
+                            <div className="flex justify-between items-start mb-2">
+                                <p className="text-xs font-black text-slate-900 uppercase truncate max-w-37.5">{log.fullName}</p>
+                                <span className="text-[9px] font-bold bg-white px-2 py-1 rounded-lg shadow-sm text-slate-500">{log.date}</span>
+                            </div>
+                            <div className="flex justify-between items-end">
+                                <div className="space-y-1">
+                                    <p className="text-[8px] text-slate-400 font-black uppercase">AM: {log.amIn || '--'} - {log.amOut || '--'}</p>
+                                    <p className="text-[8px] text-slate-400 font-black uppercase">PM: {log.pmIn || '--'} - {log.pmOut || '--'}</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-sm font-black text-emerald-600 tracking-tighter group-hover:scale-110 transition-transform">{log.totalHours}h</p>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
                 </div>
             </div>
         </div>
