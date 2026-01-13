@@ -38,7 +38,6 @@ const AnimatedNumber = memo(function AnimatedNumber({ value }: { value: string }
                 >
                     <AnimatePresence mode="popLayout">
                         <motion.span
-                            /* 2. Gamitin ang char bilang bahagi ng key para ma-trigger ang exit/enter animation */
                             key={`${index}-${char}`}
                             initial={{ y: 15, opacity: 0 }}
                             animate={{ y: 0, opacity: 1 }}
@@ -112,7 +111,7 @@ export default function AttendancePage() {
             clearInterval(dbSync);
             if (tickRef.current) clearTimeout(tickRef.current);
         };
-    }, []); // Empty dependency array para tumakbo lang sa mount
+    }, []); 
 
     const currentLog = todayLogs.find((l: TimeLog) => l.studentId === selectedId);
 
@@ -120,13 +119,30 @@ export default function AttendancePage() {
         if (!selectedId) return { label: "Select OJT Name", color: "bg-slate-400", disabled: true };
         if (loading) return { label: "Processing...", color: "bg-slate-600", disabled: true };
 
+        const now = new Date();
+        const hour = now.getHours();
+
         if (!currentLog) return { label: "Time In (AM)", color: "bg-emerald-600", disabled: false };
-        
-        if (currentLog.amIn && !currentLog.amOut) return { label: "Time Out (AM)", color: "bg-red-500", disabled: false };
+
+        if (currentLog.amIn && !currentLog.amOut) {
+            if (hour >= 12) return { label: "Time In (PM)", color: "bg-green-600", disabled: false };
+            return { label: "Time Out (AM)", color: "bg-red-500", disabled: false };
+        }
+
         if (!currentLog.pmIn) return { label: "Time In (PM)", color: "bg-green-600", disabled: false };
-        if (currentLog.pmIn && !currentLog.pmOut) return { label: "Time Out (PM)", color: "bg-red-700", disabled: false };
-        if (!currentLog.otIn) return { label: "Start Overtime", color: "bg-green-600", disabled: false };
-        if (currentLog.otIn && !currentLog.otOut) return { label: "End Overtime", color: "bg-red-700", disabled: false };
+        
+        if (currentLog.pmIn && !currentLog.pmOut) {
+            if (hour >= 17) return { label: "Start Overtime", color: "bg-emerald-700", disabled: false };
+            return { label: "Time Out (PM)", color: "bg-red-700", disabled: false };
+        }
+
+        if (currentLog.pmOut && !currentLog.otIn) {
+            return { label: "Start Overtime", color: "bg-emerald-700", disabled: hour < 17 };
+        }
+
+        if (currentLog.otIn && !currentLog.otOut) {
+            return { label: "End Overtime", color: "bg-red-900", disabled: false };
+        }
 
         return { label: "Duty Completed", color: "bg-slate-800", disabled: true };
     };
@@ -160,7 +176,6 @@ export default function AttendancePage() {
                 const [time, modifier] = timeString.split(' ');
                 const [hoursRaw, minutes] = time.split(':').map(Number);
                 let hours = hoursRaw;
-                
                 if (modifier === 'PM' && hours < 12) hours += 12;
                 if (modifier === 'AM' && hours === 12) hours = 0;
 
@@ -179,33 +194,41 @@ export default function AttendancePage() {
         };
 
         let totalMs = 0;
+        const now = new Date();
         
-        const shifts = [
-            { in: log.amIn, out: log.amOut },
-            { in: log.pmIn, out: log.pmOut },
-            { in: log.otIn, out: log.otOut }
-        ];
+        const amCutoff = new Date(); amCutoff.setHours(12, 0, 0, 0);
+        const pmCutoff = new Date(); pmCutoff.setHours(17, 0, 0, 0);
 
-        shifts.forEach(shift => {
-            const tIn = parseTimeToDate(shift.in);
-            const tOut = parseTimeToDate(shift.out);
-            if (tIn && tOut) {
-                totalMs += (tOut.getTime() - tIn.getTime());
+        if (log.amIn) {
+            const tIn = parseTimeToDate(log.amIn);
+            const tOut = parseTimeToDate(log.amOut);
+            if (tIn) {
+                const tEnd = tOut 
+                    ? tOut.getTime() 
+                    : (now.getTime() > amCutoff.getTime() ? amCutoff.getTime() : now.getTime());
+                
+                totalMs += Math.max(0, tEnd - tIn.getTime());
             }
-        });
+        }
 
-        if (log.status !== 'Complete') {
-            const activeInTimeStr = 
-                (log.otIn && !log.otOut) ? log.otIn : 
-                (log.pmIn && !log.pmOut) ? log.pmIn : 
-                (log.amIn && !log.amOut) ? log.amIn : null;
+        if (log.pmIn) {
+            const tIn = parseTimeToDate(log.pmIn);
+            const tOut = parseTimeToDate(log.pmOut);
+            if (tIn) {
+                const tEnd = tOut 
+                    ? tOut.getTime() 
+                    : (now.getTime() > pmCutoff.getTime() ? pmCutoff.getTime() : now.getTime());
+                
+                totalMs += Math.max(0, tEnd - tIn.getTime());
+            }
+        }
 
-            if (activeInTimeStr) {
-                const activeInDate = parseTimeToDate(activeInTimeStr);
-                if (activeInDate) {
-                    const diff = Date.now() - activeInDate.getTime();
-                    if (diff > 0) totalMs += diff;
-                }
+        if (log.otIn) {
+            const tIn = parseTimeToDate(log.otIn);
+            const tOut = parseTimeToDate(log.otOut);
+            if (tIn) {
+                const tEnd = tOut ? tOut.getTime() : now.getTime();
+                totalMs += Math.max(0, tEnd - tIn.getTime());
             }
         }
 

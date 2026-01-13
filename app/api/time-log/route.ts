@@ -36,16 +36,14 @@ export async function POST(req: Request) {
     try {
         await dbConnect();
         const { studentId } = await req.json();
-
         const studentRecord = await Student.findOne({ studentId });
-        if (!studentRecord) {
-            return NextResponse.json({ error: 'Student not Found' }, { status: 404 });
-        }
+        
+        if (!studentRecord) return NextResponse.json({ error: 'Student not Found' }, { status: 404 });
 
         const now = new Date();
         const hour = now.getHours();
         const today = now.toLocaleDateString('en-CA');
-        const currentTime = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true});
+        const currentTime = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 
         let log = await TimeLog.findOne({ student: studentRecord._id, date: today });
         let message = '';
@@ -56,50 +54,62 @@ export async function POST(req: Request) {
                 student: studentRecord._id,
                 studentId: studentRecord.studentId,
                 fullName: studentRecord.fullName,
-                date: today, [isAm ? 'amIn' : 'pmIn']: currentTime,
+                date: today, 
+                [isAm ? 'amIn' : 'pmIn']: currentTime,
                 status: 'Incomplete'
-            })
-            message = `Success ${isAm ? 'AM' : 'PM'} In Logged.`
+            });
+            message = `${isAm ? 'AM' : 'PM'} In Logged`
         } else {
-            if (log.amIn && !log.amOut) {
-            log.amOut = currentTime
-            message = 'AM Out Logged successfully';
-        } else if (!log.pmIn) {
-            if (hour < 12) return NextResponse.json({ error: 'PM Shift starts at 12:00 PM onwards.' }, { status: 400 });
-            log.pmIn = currentTime;
-            message = 'PM`In logged successfully.';
-        } else if (!log.pmOut) {
-            log.pmOut = currentTime;
-            log.status = 'Complete';
-            message = 'PM Out Logged. Regular Shift Completed';
-        } else if ( hour >= 17) {
-            if (!log.pmOut) return NextResponse.json({ error: 'Finish PM Shift first' }, { status: 400 });
-
-            if (!log.otIn) {
-                log.otIn = currentTime;
-                message = 'Overtime In Started';
-            } else if (!log.otOut) {
-                log.otOut = currentTime;
-                message = 'Overtime Out Finished';
-            } else {
-                return NextResponse.json({ error: 'You have already completed all the logs for today.' }, { status: 400});
+            if (log.amIn && !log.amOut && hour >= 12) {
+                log.amOut = "12:00 PM";
             }
-        } else {
-            return NextResponse.json({ error: 'Invalid log sequence or slot already filled.'}, {status: 400});
-        }
-    }
+            if (log.pmIn && !log.pmOut && hour >= 17) {
+                log.pmOut = "05:00 PM";
+                log.status = "Completed";
+            }
 
+            if (log.amIn && !log.amOut) {
+                log.amOut = currentTime;
+                message = 'AM Out Logged';
+            } else if (!log.pmIn) {
+                if (hour < 12) return NextResponse.json({ error: 'PM Shift starts at 12:00 PM.' }, { status: 400});
+                log.pmIn = currentTime;
+                message = 'Pm In Logged'
+            } else if (!log.pmOut) {
+                log.pmOut = currentTime;
+                log.status = "Completed";
+                message = 'PM Out Logged Duty Completed for Today'
+            }
+
+            else if (log.pmOut) {
+                if (hour < 17) return NextResponse.json({ error: 'Overtime starts after 5:00 PM.' }, { status: 400 });
+
+                if (!log.otIn) {
+                    log.otIn = currentTime;
+                    log.status = 'Incomplete';
+                    message = 'Overtime Started.'
+                } else if (!log.otOut) {
+                    log.otOut = currentTime;
+                    log.status = 'Complete';
+                    message = 'Overtime Finished.'
+                } else {
+                    return NextResponse.json({ error: 'All logs completed.' }, { status: 400 })
+                }
+            } else {
+                return NextResponse.json({ error: 'Invalid sequence'}, { status: 400 });
+            }
+        }
+
+        // Calculate Totals
         const amHours = calculateDuration(log.amIn, log.amOut);
         const pmHours = calculateDuration(log.pmIn, log.pmOut);
         const otHours = calculateDuration(log.otIn, log.otOut);
-
-        const totalDecimal = amHours + pmHours + otHours;
-        log.totalHours = totalDecimal.toFixed(2);
+        log.totalHours = (amHours + pmHours + otHours).toFixed(2);
 
         await log.save();
         return NextResponse.json({ message, data: log });
 
-    } catch {
-        return NextResponse.json({ error: 'Server Error '}, { status: 500 });
+    } catch  {
+        return NextResponse.json({ error: 'Server Error' }, { status: 500 });
     }
 }
