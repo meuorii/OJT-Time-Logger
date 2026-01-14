@@ -17,6 +17,26 @@ interface ITimeLog {
     totalHours?: string;
 }
 
+// 1. Helper function para sa computation (Client-side version)
+const computeLogHours = (log: ITimeLog) => {
+    const calculate = (start?: string, end?: string) => {
+        if (!start || !end) return 0;
+        const s = new Date(`2026-01-01 ${start}`);
+        const e = new Date(`2026-01-01 ${end}`);
+        const diff = (e.getTime() - s.getTime()) / 3600000;
+        return diff < 0 ? diff + 24 : diff;
+    };
+
+    const am = calculate(log.amIn, log.amOut);
+    const pm = calculate(log.pmIn, log.pmOut);
+    const ot = calculate(log.otIn, log.otOut);
+    
+    return {
+        total: am + pm + ot,
+        ot: ot
+    };
+};
+
 export default function AdminOverview() {
     const [currentTime, setCurrentTime] = useState(new Date());
     const [loading, setLoading] = useState(true);
@@ -29,20 +49,20 @@ export default function AdminOverview() {
         overallOT: 0
     });
 
-    // logic to group logs by Student and get total per student
+    // 2. Updated Memo to use real-time computation
     const studentAccumulatedHours = useMemo(() => {
         const map = new Map<string, { name: string, total: number }>();
         allLogs.forEach(log => {
             const current = map.get(log.studentId) || { name: log.fullName, total: 0 };
+            const { total } = computeLogHours(log); // Compute instead of log.totalHours
             map.set(log.studentId, {
                 name: log.fullName,
-                total: current.total + parseFloat(log.totalHours || '0')
+                total: current.total + total
             });
         });
         return Array.from(map.values());
     }, [allLogs]);
 
-    // Rolling animation timer
     useEffect(() => {
         if (studentAccumulatedHours.length > 0) {
             const interval = setInterval(() => {
@@ -62,22 +82,19 @@ export default function AdminOverview() {
 
             const students = await studentRes.json();
             const logsData = await logRes.json();
-
             const logList: ITimeLog[] = logsData.data || [];
             const todayStr = new Date().toLocaleDateString('en-CA');
 
             const logsToday = logList.filter(log => log.date === todayStr);
 
+            // 3. Re-calculate overall stats manually to ensure accuracy
             let totalHours = 0;
             let totalOT = 0;
 
             logList.forEach(log => {
-                const h = parseFloat(log.totalHours || '0');
-                totalHours += h;
-                if (log.otIn && log.otOut) {
-                    // Calculating OT (anything beyond 8h is counted as OT in this logic)
-                    totalOT += (h > 8 ? h - 8 : 0); 
-                }
+                const { total, ot } = computeLogHours(log);
+                totalHours += total;
+                totalOT += ot;
             });
 
             setAllLogs(logList);
@@ -101,7 +118,6 @@ export default function AdminOverview() {
         return () => clearInterval(timer);
     }, [fetchData]);
 
-    // Base data for the 4 static cards
     const statCards = [
         { label: 'Registered OJTs', value: stats.totalOJTs, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
         { label: 'Active Today', value: stats.loggedInToday, icon: LogIn, color: 'text-emerald-600', bg: 'bg-emerald-50' },
@@ -141,7 +157,6 @@ export default function AdminOverview() {
                 </div>
             </header>
 
-            {/* Grid updated to 5 columns on XL screens */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5">
                 {statCards.map((stat, index) => (
                     <motion.div
@@ -161,7 +176,6 @@ export default function AdminOverview() {
                     </motion.div>
                 ))}
 
-                {/* 5TH CARD: OJT Students Total Hours with Rolling Animation */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -206,23 +220,31 @@ export default function AdminOverview() {
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {allLogs.slice(0, 6).map((log) => (
-                        <div key={log._id} className="p-5 rounded-3xl bg-slate-50 border border-slate-100 hover:border-emerald-200 transition-all group">
-                            <div className="flex justify-between items-start mb-2">
-                                <p className="text-xs font-black text-slate-900 uppercase truncate max-w-37.5">{log.fullName}</p>
-                                <span className="text-[9px] font-bold bg-white px-2 py-1 rounded-lg shadow-sm text-slate-500">{log.date}</span>
-                            </div>
-                            <div className="flex justify-between items-end">
-                                <div className="space-y-1">
-                                    <p className="text-[8px] text-slate-400 font-black uppercase">AM: {log.amIn || '--'} - {log.amOut || '--'}</p>
-                                    <p className="text-[8px] text-slate-400 font-black uppercase">PM: {log.pmIn || '--'} - {log.pmOut || '--'}</p>
+                    {allLogs.slice(0, 6).map((log) => {
+                        // 4. Compute for individual cards
+                        const { total } = computeLogHours(log);
+                        
+                        return (
+                            <div key={log._id} className="p-5 rounded-3xl bg-slate-50 border border-slate-100 hover:border-emerald-200 transition-all group">
+                                <div className="flex justify-between items-start mb-2">
+                                    <p className="text-xs font-black text-slate-900 uppercase truncate max-w-37.5">{log.fullName}</p>
+                                    <span className="text-[9px] font-bold bg-white px-2 py-1 rounded-lg shadow-sm text-slate-500">{log.date}</span>
                                 </div>
-                                <div className="text-right">
-                                    <p className="text-sm font-black text-emerald-600 tracking-tighter group-hover:scale-110 transition-transform">{log.totalHours}h</p>
+                                <div className="flex justify-between items-end">
+                                    <div className="space-y-1">
+                                        <p className="text-[8px] text-slate-400 font-black uppercase">AM: {log.amIn || '--'} - {log.amOut || '--'}</p>
+                                        <p className="text-[8px] text-slate-400 font-black uppercase">PM: {log.pmIn || '--'} - {log.pmOut || '--'}</p>
+                                        <p className="text-[8px] text-rose-400 font-black uppercase">OT: {log.otIn || '--'} - {log.otOut || '--'}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-sm font-black text-emerald-600 tracking-tighter group-hover:scale-110 transition-transform">
+                                            {total.toFixed(2)}h
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             </div>
         </div>
