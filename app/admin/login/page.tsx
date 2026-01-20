@@ -24,7 +24,6 @@ export default function AdminLogin() {
                 method: 'POST',
                 body: JSON.stringify(formData),
                 headers: { 'Content-Type': 'application/json' },
-                // Sinisiguro nito na ang cookies ay maseset nang tama sa browser
                 credentials: 'include', 
             });
             
