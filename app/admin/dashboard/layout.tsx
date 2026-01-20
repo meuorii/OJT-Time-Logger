@@ -12,11 +12,13 @@ import {
     LogOut, 
     Menu, 
     X,
-    ChevronRight
+    ChevronRight,
+    Loader2
 } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const [isOpen, setIsOpen] = useState(false);
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
     const pathname = usePathname();
 
     const menuItems = [
@@ -25,6 +27,25 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         { name: 'Time Log Management', icon: Clock, href: '/admin/dashboard/timelogs' },
         { name: 'Attendance & Reports', icon: ClipboardCheck, href: '/admin/dashboard/reports' },
     ];
+
+    const handleLogout = async () => {
+        if (isLoggingOut) return;
+        
+        setIsLoggingOut(true);
+        try {
+            const res = await fetch('/api/admin/logout', { 
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            if (res.ok) {
+                window.location.href = '/admin/login';
+            }
+        } catch (error) {
+            console.error("Logout failed:", error);
+            setIsLoggingOut(false);
+        }
+    };
 
     return (
         <div className="flex min-h-screen bg-[#f8fafc]">
@@ -83,11 +104,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     })}
                 </nav>
 
-                {/* FOOTER ACTION */}
                 <div className="mt-auto pt-6 border-t border-slate-800/50">
-                    <button className="flex items-center gap-3 px-4 py-3 w-full text-slate-400 hover:text-red-400 hover:bg-red-400/5 rounded-2xl transition-all group">
-                        <LogOut size={20} className="group-hover:-translate-x-1 transition-transform" />
-                        <span className="font-bold text-sm">Logout</span>
+                    <button 
+                        onClick={handleLogout}
+                        disabled={isLoggingOut}
+                        className="flex items-center gap-3 px-4 py-3 w-full text-slate-400 hover:text-red-400 hover:bg-red-400/5 rounded-2xl transition-all group disabled:opacity-50"
+                    >
+                        {isLoggingOut ? (
+                            <Loader2 size={20} className="animate-spin" />
+                        ) : (
+                            <LogOut size={20} className="group-hover:-translate-x-1 transition-transform" />
+                        )}
+                        <span className="font-bold text-sm">
+                            {isLoggingOut ? 'Logging out...' : 'Logout'}
+                        </span>
                     </button>
                 </div>
             </aside>

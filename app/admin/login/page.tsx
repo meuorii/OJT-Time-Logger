@@ -24,17 +24,24 @@ export default function AdminLogin() {
                 method: 'POST',
                 body: JSON.stringify(formData),
                 headers: { 'Content-Type': 'application/json' },
+                // Sinisiguro nito na ang cookies ay maseset nang tama sa browser
+                credentials: 'include', 
             });
+            
             const data = await res.json();
 
             if (res.ok) {
-                setStatus({ message: 'Authentication successful. Redirecting...', isError: false });
-                setTimeout(() => router.push('/admin/dashboard'), 1500);
+                setStatus({ message: 'Identity verified. Redirecting to terminal...', isError: false });
+                
+                setTimeout(() => {
+                    router.push('/admin/dashboard');
+                    router.refresh(); 
+                }, 1000);
             } else {
-                setStatus({ message: data.error || 'Invalid credentials', isError: true });
+                setStatus({ message: data.error || 'Access Denied: Invalid Credentials', isError: true });
             }
-        } catch  {
-            setStatus({ message: 'Connection error. Please try again.', isError: true });
+        } catch {
+            setStatus({ message: 'Uplink failed. Check your connection.', isError: true });
         } finally {
             setLoading(false);
         }

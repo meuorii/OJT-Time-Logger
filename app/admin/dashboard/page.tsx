@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-    Users, LogIn, Zap, Calendar, RefreshCcw, Loader2, Hourglass, TrendingUp 
+    Users, LogIn, Zap, Calendar, RefreshCcw, Loader2, Hourglass, TrendingUp
 } from 'lucide-react';
 
 interface ITimeLog {
