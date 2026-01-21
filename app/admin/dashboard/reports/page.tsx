@@ -2,10 +2,18 @@
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { 
-    Download, Printer, Search, FileText, 
-    Calendar as CalendarIcon, User, Loader2, ArrowRight 
+    Search, FileText, 
+    Calendar as CalendarIcon, User, Loader2, ArrowRight, FileDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+
+interface jsPDFCustom extends jsPDF {
+    lastAutoTable: {
+        finalY: number;
+    }
+}
 
 interface ITimeLog {
     _id: string;
@@ -26,6 +34,104 @@ export default function ReportsPage() {
         startDate: '',
         endDate: ''
     });
+
+    const handleExportPDF = () => {
+        const doc = new jsPDF('l', 'mm', 'a4') as jsPDFCustom;
+        const pageWidth = 297;
+        const centerX = pageWidth / 2;
+        const prmsuLogo = "/prmsu.png"; 
+        const ccitLogo = "/ccit-logo.png";
+
+        // 2. REUSABLE HEADER (Removed [cite] markers and fixed unused 'data' warning)
+        const drawHeader = () => {
+            doc.addImage(prmsuLogo, 'PNG', 40, 12, 20, 20);
+            doc.addImage(ccitLogo, 'PNG', 237, 12, 20, 20);
+
+            doc.setFont("times", "normal");
+            doc.setFontSize(10);
+            doc.text("Republic of the Philippines", centerX, 18, { align: "center" });
+
+            doc.setFont("times", "bold");
+            doc.setFontSize(11);
+            doc.text("PRESIDENT RAMON MAGSAYSAY STATE UNIVERSITY", centerX, 23, { align: "center" });
+
+            doc.setFont("times", "normal");
+            doc.setFontSize(10);
+            doc.text("Iba, Zambales Philippines", centerX, 28, { align: "center" });
+
+            doc.setFontSize(11);
+            // Dynamic period text based on filters
+            const period = filters.startDate && filters.endDate 
+                ? `${filters.startDate} to ${filters.endDate}` 
+                : "__________________________________________";
+            
+            doc.text("Office/Department:____________________________________________________________", 22, 45);
+            doc.text(`Period: ${period}`, 22, 53);
+        };
+
+        const sortedLogs = [...logs].sort((a, b) => 
+            new Date(a.date).getTime() - new Date(b.date).getTime()
+        );
+
+        const tableData = sortedLogs.map(log => [
+            log.date, 
+            log.fullName, 
+            log.amIn || '', log.amOut || '', '', 
+            log.pmIn || '', log.pmOut || '', '', 
+            log.otIn || '', log.otOut || '', ''  
+        ]); 
+
+        while (tableData.length < 20) {
+            tableData.push(['', '', '', '', '', '', '', '', '', '', '']);
+        }
+
+        autoTable(doc, {
+            startY: 60,
+            margin: { left: 22, right: 22, top: 60 },
+            head: [
+                [
+                    { content: 'Date', rowSpan: 2, styles: { valign: 'middle', halign: 'center' } },
+                    { content: 'Name', rowSpan: 2, styles: { valign: 'middle', halign: 'center' } },
+                    { content: 'A.M', colSpan: 3, styles: { halign: 'center' } }, 
+                    { content: 'P.M', colSpan: 3, styles: { halign: 'center' } }, 
+                    { content: 'Overtime', colSpan: 3, styles: { halign: 'center' } } 
+                ],
+                [
+                    'In', 'Out', 'Signature', 
+                    'In', 'Out', 'Signature', 
+                    'In', 'Out', 'Signature'
+                ]
+            ],
+            body: tableData,
+            theme: 'grid',
+            styles: { 
+                font: "times", 
+                fontSize: 10, 
+                cellPadding: 2, 
+                lineColor: [0, 0, 0], 
+                lineWidth: 0.1,
+                textColor: [0, 0, 0]
+            },
+            headStyles: { 
+                fillColor: [255, 255, 255], 
+                fontStyle: 'bold',
+                halign: 'center' 
+            },
+            columnStyles: {
+                0: { cellWidth: 22 },
+                1: { 
+                    cellWidth: 60, 
+                    overflow: 'linebreak' 
+                },
+            },
+            // 3. FIXED: Properly type the callback and call drawHeader
+            didDrawPage: () => {
+                drawHeader();
+            }
+        });
+
+        doc.save(`PRMSU_DTR_Report.pdf`);
+    };
 
     const calculateRowTotal = (log: ITimeLog) => {
         const calc = (start?: string, end?: string) => {
@@ -80,17 +186,10 @@ export default function ReportsPage() {
                     <motion.button 
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
-                        className="flex items-center gap-2 bg-white border border-slate-200 text-slate-700 px-6 py-3 rounded-2xl text-xs font-black uppercase hover:bg-slate-50 transition-all shadow-sm"
-                    >
-                        <Download size={16} /> Export CSV
-                    </motion.button>
-                    <motion.button 
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => window.print()}
+                        onClick={handleExportPDF}
                         className="flex items-center gap-2 bg-[#020617] text-white px-6 py-3 rounded-2xl text-xs font-black uppercase hover:bg-slate-800 transition-all shadow-lg"
                     >
-                        <Printer size={16} /> Print Report
+                        <FileDown size={16} /> Export PDF
                     </motion.button>
                 </div>
             </header>
@@ -110,7 +209,7 @@ export default function ReportsPage() {
                         <input 
                             type="text" 
                             placeholder="Enter Student ID..."
-                            className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                            className="w-full bg-slate-50 border text-slate-500 border-slate-100 rounded-2xl px-5 py-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
                             onChange={(e) => setFilters({...filters, studentId: e.target.value})}
                         />
                     </div>
@@ -121,7 +220,7 @@ export default function ReportsPage() {
                         </label>
                         <input 
                             type="date" 
-                            className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-3 text-sm font-bold focus:outline-none focus:border-emerald-500"
+                            className="w-full bg-slate-50 border text-slate-500 border-slate-100 rounded-2xl px-5 py-3 text-sm font-bold focus:outline-none focus:border-emerald-500"
                             onChange={(e) => setFilters({...filters, startDate: e.target.value})}
                         />
                     </div>
@@ -132,7 +231,7 @@ export default function ReportsPage() {
                         </label>
                         <input 
                             type="date" 
-                            className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-3 text-sm font-bold focus:outline-none focus:border-emerald-500"
+                            className="w-full bg-slate-50 border text-slate-500 border-slate-100 rounded-2xl px-5 py-3 text-sm font-bold focus:outline-none focus:border-emerald-500"
                             onChange={(e) => setFilters({...filters, endDate: e.target.value})}
                         />
                     </div>
