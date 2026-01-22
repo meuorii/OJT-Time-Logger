@@ -5,64 +5,112 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Eye, EyeOff, User, Lock, LogIn, ChevronLeft, Cpu, ShieldCheck } from 'lucide-react';
+import { Eye, EyeOff, User, Lock, LogIn, ChevronLeft, Cpu, ShieldCheck, Loader2, AlertCircle } from 'lucide-react';
 
-const LoadingModal = ({ status }: { status: { message: string, isError: boolean } }) => (
-    <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-100 flex items-center justify-center bg-[#020617]/90 backdrop-blur-xl"
-    >
-        <div className="relative p-8 flex flex-col items-center max-w-sm w-full">
-            {/* Spinning Rings */}
-            <motion.div 
-                animate={{ rotate: 360 }}
-                transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-                className="absolute w-48 h-48 border border-emerald-500/20 rounded-full"
-            />
-            
-            {/* Center Icon: Changes to Checkmark if verified */}
-            <div className={`relative w-24 h-24 rounded-2xl flex items-center justify-center transition-colors duration-500 ${
-                status.message.includes('verified') ? 'bg-emerald-500 shadow-[0_0_40px_rgba(16,185,129,0.6)]' : 'bg-slate-800 border border-slate-700'
-            }`}>
-                {status.message.includes('verified') ? (
-                    <ShieldCheck className="text-white" size={40} />
-                ) : (
-                    <Cpu className="text-emerald-500 animate-pulse" size={40} />
-                )}
-            </div>
+const LoadingModal = ({ status }: { status: { message: string, isError: boolean } }) => {
+    const isVerified = status.message.toLowerCase().includes('verified');
 
-            {/* LIVE STATUS TEXT INSIDE MODAL */}
-            <div className="mt-12 text-center space-y-3">
-                <motion.h3 
-                    key={status.message} // Forces animation change when text updates
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="text-white font-black tracking-[0.2em] uppercase text-xs"
-                >
-                    {status.message || "Establishing Uplink"}
-                </motion.h3>
-                
-                <p className="text-slate-500 font-mono text-[9px] uppercase tracking-[0.3em]">
-                    Terminal Node: Admin-04
-                </p>
+    return (
+        <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-100 flex items-center justify-center bg-slate-950/80 backdrop-blur-md"
+        >
+            <div className="flex flex-col items-center">
+                {/* Minimalist Icon Container */}
+                <div className="relative flex items-center justify-center w-20 h-20">
+                    {/* Subtle Outer Glow/Ring */}
+                    <motion.div 
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                        className={`absolute inset-0 rounded-3xl border-2 border-t-emerald-500 border-r-transparent border-b-transparent border-l-transparent ${isVerified ? 'hidden' : 'block'}`}
+                    />
+                    
+                    <motion.div 
+                        initial={false}
+                        animate={{ 
+                            scale: isVerified ? 1.1 : 1,
+                            backgroundColor: isVerified ? "rgba(16, 185, 129, 1)" : "rgba(30, 41, 59, 0.5)" 
+                        }}
+                        className="w-16 h-16 rounded-2xl flex items-center justify-center border border-slate-700/50 shadow-2xl"
+                    >
+                        {isVerified ? (
+                            <ShieldCheck className="text-white" size={32} strokeWidth={1.5} />
+                        ) : (
+                            <Cpu className="text-emerald-500" size={28} strokeWidth={1.5} />
+                        )}
+                    </motion.div>
+                </div>
+
+                {/* Status Text */}
+                <div className="mt-8 flex flex-col items-center gap-2">
+                    <motion.h3 
+                        key={status.message}
+                        initial={{ opacity: 0, y: 5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="text-slate-200 font-medium tracking-widest uppercase text-[10px]"
+                    >
+                        {status.message || "Initializing"}
+                    </motion.h3>
+                    
+                    {/* Animated Progress Dots */}
+                    {!isVerified && (
+                        <div className="flex gap-1">
+                            {[0, 1, 2].map((i) => (
+                                <motion.div
+                                    key={i}
+                                    animate={{ opacity: [0.3, 1, 0.3] }}
+                                    transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
+                                    className="w-1 h-1 rounded-full bg-emerald-500/50"
+                                />
+                            ))}
+                        </div>
+                    )}
+                </div>
             </div>
-        </div>
-    </motion.div>
-);
+        </motion.div>
+    );
+};
 
 const PageSkeleton = () => (
     <div className="h-screen w-full bg-[#f8fafc] flex items-center justify-center p-4 sm:p-8 animate-pulse">
-        <div className="w-full max-w-5xl bg-white rounded-[3rem] h-150 flex overflow-hidden border border-slate-100">
-            <div className="hidden md:block w-[45%] bg-slate-200" />
-            <div className="w-full md:w-[55%] p-16 space-y-8">
-                <div className="h-10 bg-slate-100 w-1/3 rounded-xl" />
-                <div className="space-y-4">
-                    <div className="h-14 bg-slate-50 w-full rounded-2xl" />
-                    <div className="h-14 bg-slate-50 w-full rounded-2xl" />
+        {/* Main Container: Matches the max-w-5xl, rounded-4xl, and flex-row-reverse of the Login UI */}
+        <div className="w-full max-w-5xl bg-white rounded-4xl sm:rounded-[3rem] h-[90vh] flex flex-col md:flex-row-reverse overflow-hidden border border-slate-100 shadow-sm">
+            
+            {/* BRANDING COLUMN SKELETON (The "Dark" side in reality, but light grey in skeleton) */}
+            <div className="hidden md:block w-[45%] bg-slate-200 p-12">
+
+            </div>
+
+            {/* LOGIN FORM COLUMN SKELETON (The white side) */}
+            <div className="w-full md:w-[55%] p-8 sm:p-12 lg:p-16 flex flex-col justify-center bg-white">
+                <div className="max-w-md mx-auto w-full space-y-10">
+                    {/* Header: Sign In + Subtitle */}
+                    <header className="space-y-4">
+                        <div className="h-10 bg-slate-100 w-1/3 rounded-xl" />
+                        <div className="h-4 bg-slate-50 w-1/2 rounded-lg" />
+                    </header>
+
+                    {/* Form Inputs */}
+                    <div className="space-y-6">
+                        <div className="space-y-3">
+                            <div className="h-3 bg-slate-100 w-16 rounded ml-1" />
+                            <div className="h-14 bg-slate-50 w-full rounded-2xl" />
+                        </div>
+                        <div className="space-y-3">
+                            <div className="h-3 bg-slate-100 w-16 rounded ml-1" />
+                            <div className="h-14 bg-slate-50 w-full rounded-2xl" />
+                        </div>
+                        {/* Sign In Button */}
+                        <div className="h-14 bg-slate-200 w-full rounded-2xl mt-4" />
+                    </div>
+
+                    {/* Footer link */}
+                    <div className="flex justify-center">
+                        <div className="h-4 bg-slate-50 w-48 rounded-lg" />
+                    </div>
                 </div>
-                <div className="h-14 bg-slate-200 w-full rounded-2xl" />
             </div>
         </div>
     </div>
@@ -197,7 +245,36 @@ export default function AdminLogin() {
                         </header>
 
                         <form onSubmit={handleSubmit} className="space-y-6">
+                            <AnimatePresence mode="wait">
+                                {status.message && (
+                                    <motion.div 
+                                        initial={{ opacity: 0, y: -10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, scale: 0.95 }}
+                                        className={`flex items-center gap-3 p-4 rounded-xl text-[13px] font-medium border backdrop-blur-sm ${
+                                            status.isError 
+                                            ? 'bg-red-500/10 border-red-500/20 text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.1)]' 
+                                            : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.1)]'
+                                        }`}
+                                    >
+                                        <div className="shrink-0">
+                                            {status.isError ? (
+                                                <AlertCircle size={18} strokeWidth={2} />
+                                            ) : (
+                                                <div className="relative flex items-center justify-center">
+                                                    <Loader2 className="animate-spin" size={18} strokeWidth={2} />
 
+                                                    {!status.isError && <span className="absolute inset-0 rounded-full bg-emerald-500/20 animate-ping" />}
+                                                </div>
+                                            )}
+                                        </div>
+                                        
+                                        <span className="leading-tight tracking-wide">
+                                            {status.message}
+                                        </span>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
                             <div className="group">
                                 <label className="text-[11px] font-bold uppercase tracking-widest text-slate-400 ml-1 group-focus-within:text-emerald-600 transition-colors">Username</label>
                                 <div className="relative mt-1">

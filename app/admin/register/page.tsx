@@ -5,65 +5,93 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Eye, EyeOff, User, Mail, Lock, AlertCircle, ShieldCheck, Database } from 'lucide-react';
+import { Eye, EyeOff, User, Mail, Lock, AlertCircle, ShieldCheck, Database, Loader2 } from 'lucide-react';
 
-// --- REGISTRATION LOADING MODAL ---
-const RegisterModal = ({ status }: { status: { message: string, isError: boolean } }) => (
-    <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-100 flex items-center justify-center bg-[#020617]/90 backdrop-blur-xl"
-    >
-        <div className="relative p-8 flex flex-col items-center max-w-sm w-full text-center">
-            {/* Pulsing Aura */}
-            <motion.div 
-                animate={{ scale: [1, 1.2, 1], opacity: [0.1, 0.3, 0.1] }}
-                transition={{ duration: 4, repeat: Infinity }}
-                className="absolute w-64 h-64 bg-emerald-500 rounded-full blur-[80px]"
-            />
-            
-            <div className={`relative w-24 h-24 rounded-3xl flex items-center justify-center transition-all duration-500 ${
-                status.message.toLowerCase().includes('success') 
-                    ? 'bg-emerald-500 rotate-360 shadow-[0_0_50px_rgba(16,185,129,0.5)]' 
-                    : 'bg-slate-800 border border-emerald-500/30'
-            }`}>
-                {status.message.toLowerCase().includes('success') ? (
-                    <ShieldCheck className="text-white" size={40} />
-                ) : (
-                    <Database className="text-emerald-500 animate-bounce" size={40} />
-                )}
-            </div>
+// --- PREMIUM LOADING MODAL ---
+const LoadingModal = ({ status }: { status: { message: string, isError: boolean } }) => {
+    const isSuccess = status.message.toLowerCase().includes('success');
 
-            <div className="mt-10 relative z-10">
-                <motion.h3 
-                    key={status.message}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="text-white font-black tracking-tighter text-xl"
-                >
-                    {status.message || "Initializing Account..."}
-                </motion.h3>
-                <p className="text-slate-500 font-mono text-[10px] uppercase tracking-[0.3em] mt-4">
-                    Writing to Secure Sector 7G
-                </p>
-            </div>
-        </div>
-    </motion.div>
-);
-
-// --- REGISTRATION PAGE SKELETON ---
-const RegisterSkeleton = () => (
-    <div className="h-screen w-full bg-[#f8fafc] flex items-center justify-center p-4 sm:p-8">
-        <div className="w-full max-w-5xl bg-white rounded-[3rem] h-175 flex overflow-hidden border border-slate-100 animate-pulse">
-            <div className="hidden md:block w-[45%] bg-slate-200" />
-            <div className="w-full md:w-[55%] p-16 space-y-10">
-                <div className="h-10 bg-slate-100 w-1/3 rounded-xl" />
-                <div className="space-y-6">
-                    <div className="h-14 bg-slate-50 w-full rounded-2xl" />
-                    <div className="h-14 bg-slate-50 w-full rounded-2xl" />
-                    <div className="h-14 bg-slate-50 w-full rounded-2xl" />
+    return (
+        <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-100 flex items-center justify-center bg-slate-950/80 backdrop-blur-md"
+        >
+            <div className="flex flex-col items-center">
+                <div className="relative flex items-center justify-center w-20 h-20">
+                    <motion.div 
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                        className={`absolute inset-0 rounded-3xl border-2 border-t-emerald-500 border-r-transparent border-b-transparent border-l-transparent ${isSuccess ? 'hidden' : 'block'}`}
+                    />
+                    <motion.div 
+                        initial={false}
+                        animate={{ 
+                            scale: isSuccess ? 1.1 : 1,
+                            backgroundColor: isSuccess ? "rgba(16, 185, 129, 1)" : "rgba(30, 41, 59, 0.5)" 
+                        }}
+                        className="w-16 h-16 rounded-2xl flex items-center justify-center border border-slate-700/50 shadow-2xl"
+                    >
+                        {isSuccess ? (
+                            <ShieldCheck className="text-white" size={32} strokeWidth={1.5} />
+                        ) : (
+                            <Database className="text-emerald-500" size={28} strokeWidth={1.5} />
+                        )}
+                    </motion.div>
                 </div>
+                <div className="mt-8 flex flex-col items-center gap-2 text-center">
+                    <motion.h3 
+                        key={status.message}
+                        initial={{ opacity: 0, y: 5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="text-slate-200 font-medium tracking-widest uppercase text-[10px]"
+                    >
+                        {status.message || "Initializing Core"}
+                    </motion.h3>
+                    {!isSuccess && (
+                        <div className="flex gap-1">
+                            {[0, 1, 2].map((i) => (
+                                <motion.div
+                                    key={i}
+                                    animate={{ opacity: [0.3, 1, 0.3] }}
+                                    transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
+                                    className="w-1 h-1 rounded-full bg-emerald-500/50"
+                                />
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </motion.div>
+    );
+};
+
+// --- PERFECT PAGE SKELETON ---
+const RegisterSkeleton = () => (
+    <div className="h-screen w-full bg-[#f8fafc] flex items-center justify-center p-4 sm:p-8 animate-pulse">
+        <div className="w-full max-w-5xl bg-white rounded-[3rem] h-162.5 flex overflow-hidden border border-slate-100">
+    
+            <div className="hidden md:block w-[45%] bg-slate-200" />
+            
+            <div className="w-full md:w-[55%] p-16 space-y-8">
+                <div className="h-10 bg-slate-100 w-1/3 rounded-xl" />
+
+                <div className="space-y-6">
+                    <div className="space-y-2">
+                        <div className="h-3 bg-slate-100 w-16 rounded ml-1" />
+                        <div className="h-14 bg-slate-50 w-full rounded-2xl" />
+                    </div>
+                    <div className="space-y-2">
+                        <div className="h-3 bg-slate-100 w-16 rounded ml-1" />
+                        <div className="h-14 bg-slate-50 w-full rounded-2xl" />
+                    </div>
+                    <div className="space-y-2">
+                        <div className="h-3 bg-slate-100 w-16 rounded ml-1" />
+                        <div className="h-14 bg-slate-50 w-full rounded-2xl" />
+                    </div>
+                </div>
+                
                 <div className="h-14 bg-slate-200 w-full rounded-2xl mt-10" />
             </div>
         </div>
@@ -123,7 +151,7 @@ export default function PremiumRegister() {
         <div className="h-screen w-full bg-[#f8fafc] flex items-center justify-center p-4 sm:p-8 font-sans text-slate-900 overflow-hidden">
 
             <AnimatePresence>
-                {loading && <RegisterModal status={status} />}
+                {loading && <LoadingModal status={status} />}
             </AnimatePresence>
 
             <motion.div 
@@ -220,16 +248,29 @@ export default function PremiumRegister() {
                         </header>
 
                         <form onSubmit={handleSubmit} className="space-y-5">
-                            <AnimatePresence>
-                                {status.isError && (
+                            <AnimatePresence mode="wait">
+                                {status.message && (
                                     <motion.div 
-                                        initial={{ opacity: 0, height: 0 }}
-                                        animate={{ opacity: 1, height: 'auto' }}
-                                        exit={{ opacity: 0, height: 0 }}
-                                        className="flex items-center gap-3 p-4 rounded-2xl text-sm font-semibold border bg-red-50 border-red-100 text-red-600 mb-4"
+                                        initial={{ opacity: 0, y: -10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, scale: 0.95 }}
+                                        className={`flex items-center gap-3 p-4 rounded-xl text-[13px] font-medium border backdrop-blur-sm ${
+                                            status.isError 
+                                            ? 'bg-red-500/10 border-red-500/20 text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.1)]' 
+                                            : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.1)]'
+                                        }`}
                                     >
-                                        <AlertCircle size={18} />
-                                        {status.message}
+                                        <div className="shrink-0">
+                                            {status.isError ? (
+                                                <AlertCircle size={18} strokeWidth={2} />
+                                            ) : (
+                                                <div className="relative flex items-center justify-center">
+                                                    <Loader2 className="animate-spin" size={18} strokeWidth={2} />
+                                                    <span className="absolute inset-0 rounded-full bg-emerald-500/20 animate-ping" />
+                                                </div>
+                                            )}
+                                        </div>
+                                        <span className="leading-tight tracking-wide">{status.message}</span>
                                     </motion.div>
                                 )}
                             </AnimatePresence>
