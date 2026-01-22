@@ -1,18 +1,85 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Eye, EyeOff, User, Lock, LogIn, AlertCircle, Loader2, ChevronLeft } from 'lucide-react';
+import { Eye, EyeOff, User, Lock, LogIn, ChevronLeft, Cpu, ShieldCheck } from 'lucide-react';
+
+const LoadingModal = ({ status }: { status: { message: string, isError: boolean } }) => (
+    <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-100 flex items-center justify-center bg-[#020617]/90 backdrop-blur-xl"
+    >
+        <div className="relative p-8 flex flex-col items-center max-w-sm w-full">
+            {/* Spinning Rings */}
+            <motion.div 
+                animate={{ rotate: 360 }}
+                transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+                className="absolute w-48 h-48 border border-emerald-500/20 rounded-full"
+            />
+            
+            {/* Center Icon: Changes to Checkmark if verified */}
+            <div className={`relative w-24 h-24 rounded-2xl flex items-center justify-center transition-colors duration-500 ${
+                status.message.includes('verified') ? 'bg-emerald-500 shadow-[0_0_40px_rgba(16,185,129,0.6)]' : 'bg-slate-800 border border-slate-700'
+            }`}>
+                {status.message.includes('verified') ? (
+                    <ShieldCheck className="text-white" size={40} />
+                ) : (
+                    <Cpu className="text-emerald-500 animate-pulse" size={40} />
+                )}
+            </div>
+
+            {/* LIVE STATUS TEXT INSIDE MODAL */}
+            <div className="mt-12 text-center space-y-3">
+                <motion.h3 
+                    key={status.message} // Forces animation change when text updates
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-white font-black tracking-[0.2em] uppercase text-xs"
+                >
+                    {status.message || "Establishing Uplink"}
+                </motion.h3>
+                
+                <p className="text-slate-500 font-mono text-[9px] uppercase tracking-[0.3em]">
+                    Terminal Node: Admin-04
+                </p>
+            </div>
+        </div>
+    </motion.div>
+);
+
+const PageSkeleton = () => (
+    <div className="h-screen w-full bg-[#f8fafc] flex items-center justify-center p-4 sm:p-8 animate-pulse">
+        <div className="w-full max-w-5xl bg-white rounded-[3rem] h-150 flex overflow-hidden border border-slate-100">
+            <div className="hidden md:block w-[45%] bg-slate-200" />
+            <div className="w-full md:w-[55%] p-16 space-y-8">
+                <div className="h-10 bg-slate-100 w-1/3 rounded-xl" />
+                <div className="space-y-4">
+                    <div className="h-14 bg-slate-50 w-full rounded-2xl" />
+                    <div className="h-14 bg-slate-50 w-full rounded-2xl" />
+                </div>
+                <div className="h-14 bg-slate-200 w-full rounded-2xl" />
+            </div>
+        </div>
+    </div>
+);
 
 export default function AdminLogin() {
     const [formData, setFormData] = useState({ username: '', password: '' });
     const [showPassword, setShowPassword] = useState(false);
     const [status, setStatus] = useState({ message: '', isError: false });
     const [loading, setLoading] = useState(false);
+    const [isInitialLoading, setIsInitialLoading] = useState(true);
     const router = useRouter();
+
+    useEffect(() => {
+        const timer = setTimeout(() => setIsInitialLoading(false), 800);
+        return () => clearTimeout(timer);
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -46,8 +113,15 @@ export default function AdminLogin() {
         }
     };
 
+    if (isInitialLoading) return <PageSkeleton />;
+
     return (
         <div className="h-screen w-full bg-[#f8fafc] flex items-center justify-center p-4 sm:p-8 font-sans text-slate-900 overflow-hidden">
+
+            <AnimatePresence>
+                {loading && <LoadingModal status={status}/>}
+            </AnimatePresence>
+
             <motion.div 
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -123,21 +197,6 @@ export default function AdminLogin() {
                         </header>
 
                         <form onSubmit={handleSubmit} className="space-y-6">
-                            <AnimatePresence mode="wait">
-                                {status.message && (
-                                    <motion.div 
-                                        initial={{ opacity: 0, x: -20 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        exit={{ opacity: 0, x: 20 }}
-                                        className={`flex items-center gap-3 p-4 rounded-2xl text-sm font-semibold border ${
-                                            status.isError ? 'bg-red-50 border-red-100 text-red-600' : 'bg-emerald-50 border-emerald-100 text-emerald-600'
-                                        }`}
-                                    >
-                                        {status.isError ? <AlertCircle size={18} /> : <Loader2 className="animate-spin" size={18} />}
-                                        {status.message}
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
 
                             <div className="group">
                                 <label className="text-[11px] font-bold uppercase tracking-widest text-slate-400 ml-1 group-focus-within:text-emerald-600 transition-colors">Username</label>
@@ -179,9 +238,9 @@ export default function AdminLogin() {
                                 whileTap={{ scale: 0.98 }}
                                 type="submit"
                                 disabled={loading}
-                                className="w-full bg-[#0f172a] text-white py-4 rounded-2xl font-black shadow-xl shadow-emerald-900/10 hover:bg-black transition-all flex items-center justify-center gap-3 disabled:opacity-50 mt-4 tracking-tight"
+                                className="w-full bg-[#0f172a] text-white py-4 rounded-2xl font-black shadow-xl hover:bg-black transition-all flex items-center justify-center gap-3 disabled:opacity-50 mt-4 tracking-tight"
                             >
-                                {loading ? <Loader2 className="animate-spin" size={20} /> : <><LogIn size={20} /> SIGN IN</>}
+                                <LogIn size={20} /> SIGN IN
                             </motion.button>
                         </form>
 
