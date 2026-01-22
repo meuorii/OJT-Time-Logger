@@ -9,6 +9,61 @@ import { motion, AnimatePresence } from 'framer-motion';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
+const ReportsSkeleton = () => (
+    <div className="space-y-8 p-2 animate-pulse">
+        {/* Header Skeleton */}
+        <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-3">
+                <div className="h-10 bg-slate-200 w-80 rounded-xl" />
+                <div className="h-4 bg-slate-100 w-64 rounded-md" />
+            </div>
+            <div className="h-12 bg-slate-200 w-40 rounded-2xl" />
+        </header>
+
+        {/* Filter Card Skeleton */}
+        <section className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {[1, 2, 3].map((i) => (
+                    <div key={i} className="space-y-3">
+                        <div className="h-3 bg-slate-100 w-20 rounded ml-1" />
+                        <div className="h-12 bg-slate-50 rounded-2xl border border-slate-100" />
+                    </div>
+                ))}
+                <div className="h-12 bg-slate-200 rounded-2xl mt-auto" />
+            </div>
+        </section>
+
+        {/* Summary & Table Skeleton */}
+        <div className="bg-white rounded-[3rem] border border-slate-100 shadow-sm overflow-hidden">
+            {/* Results Breakdown Header */}
+            <div className="p-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
+                <div className="space-y-2">
+                    <div className="h-6 bg-slate-200 w-48 rounded-lg" />
+                    <div className="h-3 bg-slate-100 w-32 rounded" />
+                </div>
+                <div className="text-right space-y-2">
+                    <div className="h-3 bg-slate-100 w-24 rounded ml-auto" />
+                    <div className="h-10 bg-slate-200 w-20 rounded-xl ml-auto" />
+                </div>
+            </div>
+
+            {/* Table Rows */}
+            <div className="p-8 space-y-6">
+                {[1, 2, 3, 4, 5].map((row) => (
+                    <div key={row} className="flex justify-between items-center py-2 border-b border-slate-50 last:border-0">
+                        <div className="h-6 bg-slate-100 w-24 rounded-full" />
+                        <div className="space-y-2 flex-1 px-12 hidden md:block">
+                            <div className="h-4 bg-slate-200 w-40 rounded" />
+                            <div className="h-2 bg-slate-100 w-24 rounded" />
+                        </div>
+                        <div className="h-4 bg-slate-100 w-32 rounded hidden lg:block" />
+                        <div className="h-8 bg-slate-200 w-16 rounded-lg" />
+                    </div>
+                ))}
+            </div>
+        </div>
+    </div>
+);
 interface jsPDFCustom extends jsPDF {
     lastAutoTable: {
         finalY: number;
@@ -34,6 +89,7 @@ export default function ReportsPage() {
         startDate: '',
         endDate: ''
     });
+    const [initialFetch, setInitialFetch] = useState(true);
 
     const handleExportPDF = () => {
         const doc = new jsPDF('l', 'mm', 'a4') as jsPDFCustom;
@@ -155,6 +211,7 @@ export default function ReportsPage() {
             console.error("Report Error:", error);
         } finally {
             setLoading(false);
+            setInitialFetch(false);
         }
     }, [filters]);
 
@@ -165,6 +222,8 @@ export default function ReportsPage() {
     const totalAccumulatedHours = useMemo(() => {
         return logs.reduce((acc, log) => acc + parseFloat(calculateRowTotal(log)), 0).toFixed(2);
     }, [logs]);
+
+    if (initialFetch) return <ReportsSkeleton />;
 
     return (
         <motion.div 

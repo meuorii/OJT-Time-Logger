@@ -7,6 +7,42 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
+const OjtManagementSkeleton = () => (
+    <div className="space-y-8 p-2 animate-pulse">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-3">
+                <div className="h-10 bg-slate-200 w-72 rounded-xl" />
+                <div className="h-4 bg-slate-100 w-64 rounded-md" />
+            </div>
+            <div className="h-16 bg-slate-200 w-full md:w-56 rounded-2xl shadow-sm" />
+        </div>
+
+        {/* Search Bar Skeleton */}
+        <div className="h-14 bg-slate-100 w-full max-w-md rounded-2xl" />
+
+        {/* Table Skeleton */}
+        <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden">
+            <div className="p-8 space-y-6">
+                <div className="flex justify-between border-b border-slate-50 pb-4">
+                    <div className="h-4 bg-slate-100 w-32 rounded" />
+                    <div className="h-4 bg-slate-100 w-48 rounded" />
+                    <div className="h-4 bg-slate-100 w-24 rounded" />
+                </div>
+                {[1, 2, 3, 4, 5].map((i) => (
+                    <div key={i} className="flex justify-between items-center py-2">
+                        <div className="h-8 bg-slate-50 w-28 rounded-full" />
+                        <div className="h-5 bg-slate-100 w-56 rounded-lg" />
+                        <div className="flex gap-2">
+                            <div className="w-10 h-10 bg-slate-50 rounded-xl" />
+                            <div className="w-10 h-10 bg-slate-50 rounded-xl" />
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    </div>
+);
+
 interface IStudent {
     _id: string;
     fullName: string;
@@ -112,9 +148,17 @@ export default function OJTManagement() {
         s.studentId.includes(searchTerm)
     );
 
+    if (loading) return <OjtManagementSkeleton />;
+
     return (
         <div className="space-y-8 p-2">
             {/* TOP HEADER */}
+            <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, ease: "easeOut" }}
+                className="space-y-8 p-2"
+            >
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-4xl font-black tracking-tight text-slate-900 uppercase">
@@ -314,6 +358,7 @@ export default function OJTManagement() {
                     </div>
                 )}
             </AnimatePresence>
+            </motion.div>
         </div>
     );
 }

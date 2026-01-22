@@ -6,6 +6,54 @@ import {
     Users, LogIn, Zap, Calendar, RefreshCcw, Loader2, Hourglass, TrendingUp 
 } from 'lucide-react';
 
+const OverviewSkeleton = () => (
+    <div className="space-y-8 animate-pulse">
+        {/* Header Skeleton */}
+        <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div>
+                <div className="h-10 bg-slate-200 w-64 rounded-xl mb-3" />
+                <div className="h-4 bg-slate-100 w-32 rounded-md" />
+            </div>
+            <div className="bg-slate-100 h-20 w-64 rounded-2xl border border-slate-200" />
+        </header>
+
+        {/* Stat Cards Grid Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5">
+            {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="bg-white p-6 rounded-4xl border border-slate-100 shadow-sm space-y-4">
+                    <div className="w-12 h-12 rounded-2xl bg-slate-100" />
+                    <div className="space-y-2">
+                        <div className="h-3 bg-slate-50 w-20 rounded" />
+                        <div className="h-8 bg-slate-100 w-24 rounded-lg" />
+                    </div>
+                </div>
+            ))}
+        </div>
+
+        {/* History Table Skeleton */}
+        <div className="w-full bg-white rounded-[3rem] border border-slate-100 p-8 shadow-sm">
+            <div className="flex items-center justify-between mb-8">
+                <div className="h-7 bg-slate-200 w-48 rounded-lg" />
+                <div className="h-6 bg-slate-50 w-24 rounded-full" />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                    <div key={i} className="p-5 rounded-3xl bg-slate-50 border border-slate-100 space-y-4">
+                        <div className="flex justify-between">
+                            <div className="h-4 bg-slate-200 w-24 rounded" />
+                            <div className="h-4 bg-slate-200 w-12 rounded" />
+                        </div>
+                        <div className="space-y-2">
+                            <div className="h-2 bg-slate-100 w-full rounded" />
+                            <div className="h-2 bg-slate-100 w-full rounded" />
+                            <div className="h-2 bg-slate-100 w-2/3 rounded" />
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    </div>
+);
 interface ITimeLog {
     _id: string;
     studentId: string;
@@ -124,6 +172,8 @@ export default function AdminOverview() {
         { label: 'Overall Total Hours', value: `${stats.overallHours}h`, icon: TrendingUp, color: 'text-amber-600', bg: 'bg-amber-50' },
         { label: 'Total Accumulated OT', value: `${stats.overallOT}h`, icon: Zap, color: 'text-purple-600', bg: 'bg-purple-50' },
     ];
+
+    if (loading) return <OverviewSkeleton />;
 
     return (
         <div className="space-y-8">

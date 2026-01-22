@@ -5,6 +5,64 @@ import { Clock, User, Loader2, CheckCircle2, History, ChevronDown} from 'lucide-
 import { toast, Toaster } from 'react-hot-toast';
 import { motion, AnimatePresence} from 'framer-motion'; 
 
+const AttendanceSkeleton = () => (
+    <div className="space-y-8 p-2 animate-pulse">
+        {/* Header Skeleton */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-3">
+                <div className="h-10 bg-slate-200 w-80 rounded-xl" />
+                <div className="h-4 bg-slate-100 w-64 rounded-md" />
+            </div>
+            <div className="h-12 bg-slate-200 w-44 rounded-2xl shadow-sm" />
+        </div>
+
+        {/* Smart Check-in Card Skeleton */}
+        <div className="bg-white rounded-[2.5rem] p-8 md:p-10 border border-slate-100 shadow-sm">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
+                <div className="space-y-6">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-slate-200 rounded-2xl" />
+                        <div className="h-6 bg-slate-200 w-40 rounded-lg" />
+                    </div>
+                    <div className="space-y-3">
+                        <div className="h-3 bg-slate-100 w-24 rounded ml-2" />
+                        <div className="h-14 bg-slate-50 border border-slate-100 rounded-2xl w-full" />
+                    </div>
+                </div>
+                <div className="flex justify-center md:justify-end">
+                    <div className="w-full max-w-sm h-48 bg-slate-200 rounded-[2.5rem]" />
+                </div>
+            </div>
+        </div>
+
+        {/* Table Skeleton */}
+        <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden">
+            <div className="p-6 border-b border-slate-50 bg-slate-50/30">
+                <div className="h-4 bg-slate-200 w-32 rounded" />
+            </div>
+            <div className="p-8 space-y-6">
+                {/* Table Header Placeholder */}
+                <div className="flex justify-between border-b border-slate-50 pb-4">
+                    <div className="h-3 bg-slate-100 w-24 rounded" />
+                    <div className="h-3 bg-slate-100 w-48 rounded hidden md:block" />
+                    <div className="h-3 bg-slate-100 w-24 rounded" />
+                </div>
+                {/* Table Rows Placeholder */}
+                {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="flex justify-between items-center py-2">
+                        <div className="space-y-2">
+                            <div className="h-5 bg-slate-200 w-32 rounded-lg" />
+                            <div className="h-3 bg-slate-100 w-20 rounded-full" />
+                        </div>
+                        <div className="h-4 bg-slate-100 w-64 rounded hidden md:block" />
+                        <div className="h-10 bg-slate-200 w-24 rounded-xl" />
+                    </div>
+                ))}
+            </div>
+        </div>
+    </div>
+);
+
 // 1. Typescript Definitions (Fixes the 'never' errors)
 interface TimeLog {
     _id: string;
@@ -238,6 +296,10 @@ export default function AttendancePage() {
 
         return formatTime(totalMs);
     };
+
+    if (fetching && todayLogs.length === 0) {
+        return <AttendanceSkeleton />;
+    }
 
    return (
         <div className="space-y-8 p-2 font-sans">
