@@ -12,13 +12,149 @@ import {
     LogOut, 
     Menu, 
     X,
-    Loader2
+    Loader2,
+    ShieldCheck,
+    Cpu
 } from 'lucide-react';
 import Image from 'next/image';
 
+const LoadingModal = ({ status }: { status: { message: string, isError: boolean } }) => {
+    const isVerified = status.message.toLowerCase().includes('verified') || 
+                       status.message.toLowerCase().includes('terminated');
+
+    return (
+        <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-110 flex items-center justify-center bg-slate-950/80 backdrop-blur-md"
+        >
+            <div className="flex flex-col items-center">
+                <div className="relative flex items-center justify-center w-20 h-20">
+                    <motion.div 
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                        className={`absolute inset-0 rounded-3xl border-2 border-t-emerald-500 border-r-transparent border-b-transparent border-l-transparent ${isVerified ? 'hidden' : 'block'}`}
+                    />
+                    <motion.div 
+                        initial={false}
+                        animate={{ 
+                            scale: isVerified ? 1.1 : 1,
+                            backgroundColor: isVerified ? "rgba(16, 185, 129, 1)" : "rgba(30, 41, 59, 0.5)" 
+                        }}
+                        className="w-16 h-16 rounded-2xl flex items-center justify-center border border-slate-700/50 shadow-2xl"
+                    >
+                        {isVerified ? (
+                            <ShieldCheck className="text-white" size={32} strokeWidth={1.5} />
+                        ) : (
+                            <Cpu className="text-emerald-500" size={28} strokeWidth={1.5} />
+                        )}
+                    </motion.div>
+                </div>
+
+                <div className="mt-8 flex flex-col items-center gap-2">
+                    <motion.h3 
+                        key={status.message}
+                        initial={{ opacity: 0, y: 5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="text-slate-200 font-medium tracking-widest uppercase text-[10px]"
+                    >
+                        {status.message || "Initializing"}
+                    </motion.h3>
+                    {!isVerified && (
+                        <div className="flex gap-1">
+                            {[0, 1, 2].map((i) => (
+                                <motion.div
+                                    key={i}
+                                    animate={{ opacity: [0.3, 1, 0.3] }}
+                                    transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
+                                    className="w-1 h-1 rounded-full bg-emerald-500/50"
+                                />
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </motion.div>
+    );
+};
+
+const LogoutModal = ({ isOpen, onClose, onConfirm, isLoading }: { 
+    isOpen: boolean; 
+    onClose: () => void; 
+    onConfirm: () => void;
+    isLoading: boolean;
+}) => {
+    return (
+        <AnimatePresence>
+            {isOpen && (
+                <div className="fixed inset-0 z-100 flex items-center justify-center p-6">
+                    {/* Backdrop - High-end Glass Effect */}
+                    <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={onClose}
+                        className="absolute inset-0 bg-slate-900/60 backdrop-blur-md"
+                    />
+                    
+                    {/* Modal Card - Exact Rounded Square Geometry */}
+                    <motion.div 
+                        initial={{ scale: 0.9, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.9, opacity: 0 }}
+                        className="relative w-full max-w-95 aspect-square bg-white border border-slate-100 rounded-[2.5rem] p-10 shadow-2xl flex flex-col items-center justify-center overflow-hidden"
+                    >
+                        {/* Internal Decorative Element */}
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-rose-50/50 rounded-full blur-3xl -mr-16 -mt-16" />
+                        
+                        <div className="relative z-10 w-full text-center">
+                            {/* Icon - Squircle Style */}
+                            <div className="mx-auto w-20 h-20 bg-rose-50 border border-rose-100 rounded-[1.75rem] flex items-center justify-center mb-6">
+                                <LogOut size={32} className="text-rose-600" />
+                            </div>
+
+                            {/* Clean Professional Text */}
+                            <h3 className="text-2xl font-black text-slate-900 tracking-tight uppercase">
+                                End <span className="text-rose-600">Session</span>
+                            </h3>
+                            
+                            <p className="text-slate-400 text-[11px] font-black uppercase tracking-[0.15em] mt-2 mb-10 leading-relaxed">
+                                Confirm logout to secure <br /> your administrator access
+                            </p>
+
+                            <div className="space-y-3 w-full">
+                                <button 
+                                    onClick={onConfirm}
+                                    disabled={isLoading}
+                                    className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl bg-[#020617] text-white text-[10px] font-black uppercase tracking-[0.2em] hover:bg-rose-600 transition-all duration-300 shadow-lg shadow-slate-200 disabled:opacity-50"
+                                >
+                                    {isLoading ? (
+                                        <Loader2 size={16} className="animate-spin" />
+                                    ) : (
+                                        'Sign Out'
+                                    )}
+                                </button>
+                                
+                                <button 
+                                    onClick={onClose}
+                                    className="w-full py-3 text-slate-400 hover:text-slate-900 text-[9px] font-black uppercase tracking-[0.2em] transition-colors"
+                                >
+                                    Stay Logged In
+                                </button>
+                            </div>
+                        </div>
+                    </motion.div>
+                </div>
+            )}
+        </AnimatePresence>
+    );
+};
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const [isOpen, setIsOpen] = useState(false);
-    const [isLoggingOut, setIsLoggingOut] = useState(false);
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
+    const [logoutStatus, setLogoutStatus] = useState({ message: '', isError: false, isLoading: false });
     const pathname = usePathname();
 
     const menuItems = [
@@ -29,9 +165,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     ];
 
     const handleLogout = async () => {
-        if (isLoggingOut) return;
+        // FIX: Match the state variable name
+        setLogoutStatus({ message: 'De-authenticating terminal...', isError: false, isLoading: true });
         
-        setIsLoggingOut(true);
+        // Optional: Close the confirmation modal so only the LoadingModal is visible
+        setShowLogoutModal(false);
+
         try {
             const res = await fetch('/api/admin/logout', { 
                 method: 'POST',
@@ -39,16 +178,33 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             });
 
             if (res.ok) {
-                window.location.href = '/admin/login';
+                setLogoutStatus({ message: 'Session Terminated. Redirecting...', isError: false, isLoading: true });
+                setTimeout(() => {
+                    window.location.href = '/admin/login';
+                }, 1500);
+            } else {
+                setLogoutStatus({ message: 'Error: Could not terminate session', isError: true, isLoading: false });
             }
-        } catch (error) {
-            console.error("Logout failed:", error);
-            setIsLoggingOut(false);
+        } catch  {
+            setLogoutStatus({ message: 'Network Failure: Termination Aborted', isError: true, isLoading: false });
         }
     };
 
     return (
         <div className="flex min-h-screen bg-[#f8fafc]">
+
+            <AnimatePresence>
+                {logoutStatus.isLoading && (
+                    <LoadingModal status={{ message: logoutStatus.message, isError: logoutStatus.isError }} />
+                )}
+            </AnimatePresence>
+
+            <LogoutModal 
+                isOpen={showLogoutModal}
+                onClose={() => setShowLogoutModal(false)}
+                onConfirm={handleLogout}
+                isLoading={logoutStatus.isLoading} 
+            />
             {/* MOBILE MENU BUTTON */}
             <button 
                 onClick={() => setIsOpen(!isOpen)}
@@ -145,26 +301,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 })}
                 </nav>
 
-                {/* FOOTER ACTION - Clean & Professional Logout */}
                 <div className="mt-auto pt-6 border-t border-slate-800/60">
                     <button 
-                        onClick={handleLogout}
-                        disabled={isLoggingOut}
-                        className="flex items-center gap-3 px-4 py-3.5 w-full text-slate-500 hover:text-rose-400 bg-slate-900/50 hover:bg-rose-500/5 rounded-xl transition-all duration-300 group border border-slate-800/50 hover:border-rose-500/20 disabled:opacity-50"
+                        onClick={() => setShowLogoutModal(true)} // Trigger modal
+                        className="flex items-center gap-3 px-4 py-3.5 w-full text-slate-500 hover:text-rose-400 bg-slate-900/50 hover:bg-rose-500/5 rounded-xl transition-all duration-300 group border border-slate-800/50 hover:border-rose-500/20"
                     >
                         <div className="p-1.5 rounded-lg bg-slate-800 group-hover:bg-rose-500/10 transition-colors">
-                            {isLoggingOut ? (
-                                <Loader2 size={16} className="animate-spin text-emerald-500" />
-                            ) : (
-                                <LogOut size={16} className="group-hover:translate-x-0.5 transition-transform" />
-                            )}
+                            <LogOut size={16} className="group-hover:translate-x-0.5 transition-transform" />
                         </div>
                         <span className="font-bold text-xs uppercase tracking-widest">
-                            {isLoggingOut ? 'Terminating...' : 'Sign Out'}
+                            Sign Out
                         </span>
                     </button>
-                    
-                    {/* Subtle System Status */}
+                    {/* Status Indicator */}
                     <div className="mt-4 px-4 flex items-center gap-2">
                         <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                         <span className="text-[10px] text-slate-600 font-bold uppercase tracking-tight">System Operational</span>
