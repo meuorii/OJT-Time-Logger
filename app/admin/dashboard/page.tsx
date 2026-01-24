@@ -79,9 +79,12 @@ const computeLogHours = (log: ITimeLog) => {
     const pm = calculate(log.pmIn, log.pmOut);
     const ot = calculate(log.otIn, log.otOut);
     
+    const actualTotal = am + pm + ot;
+
     return {
-        total: am + pm + ot,
-        ot: ot
+        total: Math.min(actualTotal, 8), 
+        ot: ot,
+        isCapped: actualTotal > 8 
     };
 };
 

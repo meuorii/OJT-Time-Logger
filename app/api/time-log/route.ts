@@ -47,9 +47,7 @@ export async function POST(req: Request) {
         const now = new Date();
 
         const hour = parseInt(new Intl.DateTimeFormat('en-GB', {
-            hour: '2-digit',
-            hour12: false,
-            timeZone: TIME_ZONE
+            hour: '2-digit', hour12: false, timeZone: TIME_ZONE
         }).format(now));
 
         const today = new Intl.DateTimeFormat('en-CA', { 
@@ -57,10 +55,7 @@ export async function POST(req: Request) {
         }).format(now);
 
         const currentTime = now.toLocaleTimeString('en-US', { 
-            hour: '2-digit', 
-            minute: '2-digit', 
-            hour12: true,
-            timeZone: TIME_ZONE 
+            hour: '2-digit', minute: '2-digit', hour12: true, timeZone: TIME_ZONE 
         });
 
         let log = await TimeLog.findOne({ student: studentRecord._id, date: today });
@@ -77,29 +72,34 @@ export async function POST(req: Request) {
                 status: 'Incomplete'
             });
             message = `${isAm ? 'AM' : 'PM'} In Logged`;
-        } else {
-
+        } 
+        
+        else {
             if (log.amIn && !log.amOut && hour >= 12) {
                 log.amOut = "12:00 PM";
             }
             if (log.pmIn && !log.pmOut && hour >= 17) {
                 log.pmOut = "05:00 PM";
-                log.status = "Completed";
             }
-            if (log.amIn && !log.amOut) {
+
+            if (log.amIn && !log.amOut && hour < 12) {
                 log.amOut = currentTime;
                 message = 'AM Out Logged';
-            } else if (!log.pmIn) {
+            } 
+            else if (!log.pmIn) {
                 if (hour < 12) {
                     return NextResponse.json({ error: 'PM Shift starts at 12:00 PM.' }, { status: 400});
                 }
                 log.pmIn = currentTime;
                 message = 'PM In Logged';
-            } else if (!log.pmOut) {
-                log.pmOut = currentTime;
+            } 
+            else if (!log.pmOut) {
+                log.pmOut = hour >= 17 ? "05:00 PM" : currentTime;
                 log.status = "Completed";
-                message = 'PM Out Logged Duty Completed for Today';
-            } else if (log.pmOut) {
+                message = 'PM Out Logged';
+            } 
+
+            else {
                 if (hour < 17) {
                     return NextResponse.json({ error: 'Overtime starts after 5:00 PM.' }, { status: 400 });
                 }
@@ -115,8 +115,6 @@ export async function POST(req: Request) {
                 } else {
                     return NextResponse.json({ error: 'All logs completed for today.' }, { status: 400 });
                 }
-            } else {
-                return NextResponse.json({ error: 'Invalid sequence' }, { status: 400 });
             }
         }
 

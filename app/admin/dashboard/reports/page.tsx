@@ -197,7 +197,12 @@ export default function ReportsPage() {
             const diff = (e.getTime() - s.getTime()) / 3600000;
             return diff < 0 ? diff + 24 : diff;
         };
-        return (calc(log.amIn, log.amOut) + calc(log.pmIn, log.pmOut) + calc(log.otIn, log.otOut)).toFixed(2);
+
+        const actualTotal = calc(log.amIn, log.amOut) + calc(log.pmIn, log.pmOut) + calc(log.otIn, log.otOut);
+        
+        const cappedTotal = Math.min(actualTotal, 8); 
+        
+        return cappedTotal.toFixed(2);
     };
 
     const fetchReports = useCallback(async () => { // 2. I-wrap ito

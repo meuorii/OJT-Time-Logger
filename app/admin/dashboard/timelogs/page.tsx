@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, memo, useRef } from 'react';
+import { useState, useEffect, memo, useRef, useCallback } from 'react';
 import { Clock, User, Loader2, CheckCircle2, History, ChevronDown} from 'lucide-react';
 import { toast, Toaster } from 'react-hot-toast';
 import { motion, AnimatePresence} from 'framer-motion'; 
@@ -125,10 +125,9 @@ export default function AttendancePage() {
     const [fetching, setFetching] = useState(true);
     const [, setTick] = useState(0);
 
-    const loadData = async () => {
+    const loadData = useCallback(async () => {
         try {
             const today = new Date().toLocaleDateString('en-CA'); 
-
             const [resStudents, resLogs] = await Promise.all([
                 fetch('/api/students'),
                 fetch(`/api/time-log?date=${today}`)
@@ -144,15 +143,53 @@ export default function AttendancePage() {
         } finally {
             setFetching(false);
         }
-    };
+    }, []); // Empty array dahil fetch logic lang ito
 
     const tickRef = useRef<NodeJS.Timeout | null>(null);
 
+    const triggerAutoOut = useCallback(async (type: 'AM' | 'PM') => {
+        try {
+            const res = await fetch('/api/time-log/auto-out', {
+                method: 'POST',
+                headers: { 'Content-Type' : 'application/json' },
+                body: JSON.stringify({ type })
+            });
+
+            if (res.ok) {
+                toast.success(`Auto-out for ${type} shift completed.`);
+                await loadData();
+            }
+        } catch {
+            toast.error('Failed to perform auto-out operation.');
+        }
+    }, [loadData]); // Empty array kung hindi ito depende sa external state
+
+    const autoOutDone = useRef({ AM: false, PM: false });
+    
     useEffect(() => {
-
         loadData(); 
-
         const dbSync = setInterval(loadData, 15000);
+
+        const checkScheduleTime = async () => {
+            const now = new Date();
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+
+            if (hours === 12 && minutes === 0 && !autoOutDone.current.AM) {
+                autoOutDone.current.AM = true;
+                await triggerAutoOut('AM');
+            } 
+            else if (hours === 17 && minutes === 0 && !autoOutDone.current.PM) {
+                autoOutDone.current.PM = true;
+                await triggerAutoOut('PM');
+            }
+
+            if (minutes !== 0) {
+                autoOutDone.current = { AM: false, PM: false };
+            }
+        };
+
+        const autoOutTimer = setInterval(checkScheduleTime, 30000);
 
         // Accurate Ticker Logic
         const startTicker = () => {
@@ -162,7 +199,6 @@ export default function AttendancePage() {
                 const delay = 1000 - now.getMilliseconds();
                 tickRef.current = setTimeout(tick, delay);
             };
-            
             const initialDelay = 1000 - new Date().getMilliseconds();
             tickRef.current = setTimeout(tick, initialDelay);
         };
@@ -171,9 +207,10 @@ export default function AttendancePage() {
 
         return () => {
             clearInterval(dbSync);
+            clearInterval(autoOutTimer);
             if (tickRef.current) clearTimeout(tickRef.current);
         };
-    }, []); 
+    }, [loadData, triggerAutoOut]); 
 
     const currentLog = todayLogs.find((l: TimeLog) => l.studentId === selectedId);
 
@@ -184,15 +221,22 @@ export default function AttendancePage() {
         const now = new Date();
         const hour = now.getHours();
 
-        if (!currentLog) return { label: "Time In (AM)", color: "bg-emerald-600", disabled: false };
+        if (!currentLog) {
+            if (hour >= 17) return { label: "Start Overtime", color: "bg-emerald-700", disabled: false };
+            if (hour >= 12) return { label: "Time In (PM)", color: "bg-green-600", disabled: false };
+            return { label: "Time In (AM)", color: "bg-emerald-600", disabled: false };
+        }
 
         if (currentLog.amIn && !currentLog.amOut) {
             if (hour >= 12) return { label: "Time In (PM)", color: "bg-green-600", disabled: false };
             return { label: "Time Out (AM)", color: "bg-red-500", disabled: false };
         }
 
-        if (!currentLog.pmIn) return { label: "Time In (PM)", color: "bg-green-600", disabled: false };
-        
+        if (currentLog.amOut && !currentLog.pmIn) {
+            if (hour >= 17) return { label: "Start Overtime", color: "bg-emerald-700", disabled: false };
+            return { label: "Time In (PM)", color: "bg-green-600", disabled: false };
+        }
+
         if (currentLog.pmIn && !currentLog.pmOut) {
             if (hour >= 17) return { label: "Start Overtime", color: "bg-emerald-700", disabled: false };
             return { label: "Time Out (PM)", color: "bg-red-700", disabled: false };
