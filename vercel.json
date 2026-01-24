@@ -1,0 +1,14 @@
+{
+    "crons": [
+        {
+            "path": "/api/time-log/auto-out",
+            "schedule": "1 4 * * *", 
+            "body": "{\"type\": \"AM\"}"
+        },
+        {
+            "path": "/api/time-log/auto-out",
+            "schedule": "1 9 * * *",
+            "body": "{\"type\": \"PM\"}"
+        }
+    ]
+}

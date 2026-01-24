@@ -5,17 +5,21 @@ import { NextResponse } from 'next/server';
 export async function POST(req: Request) {
     try {
         await dbConnect();
+
+        const phDate = new Intl.DateTimeFormat("en-CA", {
+            timeZone: "Asia/Manila", year: "numeric", month: "2-digit", day: "2-digit"
+        }).format(new Date());
+
         const { type } = await req.json();
-        const today = new Date().toLocaleDateString('en-CA');
 
         if (type == 'AM') {
             await TimeLog.updateMany(
-                { date: today, amIn: { $exists: true }, amOut: null },
+                { date: phDate, amIn: { $exists: true }, amOut: null },
                 { $set: { amOut: "12:00 PM"} }
             );
         } else if (type == 'PM') {
             await TimeLog.updateMany(
-                { date: today, pmIn: { $exists: true }, pmOut: null },
+                { date: phDate, pmIn: { $exists: true }, pmOut: null },
                 { $set: { pmOut: "05:00 PM", status: "Completed" } }
             );
         }
