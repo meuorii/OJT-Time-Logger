@@ -146,52 +146,11 @@ export default function AttendancePage() {
     }, []); // Empty array dahil fetch logic lang ito
 
     const tickRef = useRef<NodeJS.Timeout | null>(null);
-
-    const triggerAutoOut = useCallback(async (type: 'AM' | 'PM') => {
-        try {
-            const res = await fetch('/api/time-log/auto-out', {
-                method: 'POST',
-                headers: { 'Content-Type' : 'application/json' },
-                body: JSON.stringify({ type })
-            });
-
-            if (res.ok) {
-                toast.success(`Auto-out for ${type} shift completed.`);
-                await loadData();
-            }
-        } catch {
-            toast.error('Failed to perform auto-out operation.');
-        }
-    }, [loadData]); // Empty array kung hindi ito depende sa external state
-
-    const autoOutDone = useRef({ AM: false, PM: false });
     
     useEffect(() => {
         loadData(); 
         const dbSync = setInterval(loadData, 15000);
 
-        const checkScheduleTime = async () => {
-            const now = new Date();
-            const hours = now.getHours();
-            const minutes = now.getMinutes();
-
-            if (hours === 12 && minutes === 0 && !autoOutDone.current.AM) {
-                autoOutDone.current.AM = true;
-                await triggerAutoOut('AM');
-            } 
-            else if (hours === 17 && minutes === 0 && !autoOutDone.current.PM) {
-                autoOutDone.current.PM = true;
-                await triggerAutoOut('PM');
-            }
-
-            if (minutes !== 0) {
-                autoOutDone.current = { AM: false, PM: false };
-            }
-        };
-
-        const autoOutTimer = setInterval(checkScheduleTime, 30000);
-
-        // Accurate Ticker Logic
         const startTicker = () => {
             const tick = () => {
                 setTick(t => t + 1);
@@ -207,10 +166,9 @@ export default function AttendancePage() {
 
         return () => {
             clearInterval(dbSync);
-            clearInterval(autoOutTimer);
             if (tickRef.current) clearTimeout(tickRef.current);
         };
-    }, [loadData, triggerAutoOut]); 
+    }, [loadData]); 
 
     const currentLog = todayLogs.find((l: TimeLog) => l.studentId === selectedId);
 
