@@ -2,15 +2,16 @@ import dbConnect from "@/lib/mongodb";
 import { TimeLog } from "@/models/TimeLog";
 import { NextResponse } from 'next/server';
 
-export async function POST(req: Request) {
+export async function GET(req: Request) {
     try {
         await dbConnect();
+
+        const { searchParams } = new URL(req.url);
+        const type = searchParams.get('type')
 
         const phDate = new Intl.DateTimeFormat("en-CA", {
             timeZone: "Asia/Manila", year: "numeric", month: "2-digit", day: "2-digit"
         }).format(new Date());
-
-        const { type } = await req.json();
 
         if (type == 'AM') {
             await TimeLog.updateMany(
