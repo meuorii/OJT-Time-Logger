@@ -1,11 +1,11 @@
 {
     "crons": [
         {
-            "path": "/api/time-log/auto-out",
+            "path": "/api/auto-out?type=AM",
             "schedule": "1 4 * * *"
         },
         {
-            "path": "/api/time-log/auto-out",
+            "path": "/api/auto-out?type=PM",
             "schedule": "1 9 * * *"
         }
     ]
