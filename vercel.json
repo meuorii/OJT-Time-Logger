@@ -2,13 +2,11 @@
     "crons": [
         {
             "path": "/api/time-log/auto-out",
-            "schedule": "1 4 * * *", 
-            "body": "{\"type\": \"AM\"}"
+            "schedule": "1 4 * * *"
         },
         {
             "path": "/api/time-log/auto-out",
-            "schedule": "1 9 * * *",
-            "body": "{\"type\": \"PM\"}"
+            "schedule": "1 9 * * *"
         }
     ]
 }
