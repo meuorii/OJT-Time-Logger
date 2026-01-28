@@ -1,0 +1,20 @@
+name: Auto Out Cron Job
+
+on:
+  schedule:
+    - cron: "1 4 * * *"  # 12:01 PM PH
+    - cron: "1 9 * * *"  # 5:01 PM PH
+  workflow_dispatch: # manual trigger
+
+jobs:
+  auto-out:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: AM Auto-Out
+        run: |
+          curl -X GET "${{ secrets.AUTO_OUT_URL }}?type=AM"
+
+      - name: PM Auto-Out
+        run: |
+          curl -X GET "${{ secrets.AUTO_OUT_URL }}?type=PM"
