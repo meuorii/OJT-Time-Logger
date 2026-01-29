@@ -303,6 +303,34 @@ export default function AttendancePage() {
         return <AttendanceSkeleton />;
     }
 
+    const getEarliestLogTime = (log: TimeLog) => {
+        const parse = (time?: string) => {
+            if (!time) return null;
+
+            const [t, meridian] = time.split(" ");
+            const [hRaw, m] = t.split(":").map(Number);
+            let h = hRaw;
+
+            if (meridian === "PM" && h < 12) h += 12;
+            if (meridian === "AM" && h === 12) h = 0;
+
+            const d = new Date();
+            d.setHours(h, m, 0, 0);
+            return d.getTime();
+        };
+
+        return (
+            parse(log.amIn) ??
+            parse(log.pmIn) ??
+            parse(log.otIn) ??
+            Number.MAX_SAFE_INTEGER
+        );
+    };
+
+    const sortedLogs = [...todayLogs].sort(
+        (a, b) => getEarliestLogTime(a) - getEarliestLogTime(b)
+    );
+
    return (
         <div className="space-y-8 p-2 font-sans">
             <Toaster position="top-right" />
@@ -456,7 +484,7 @@ export default function AttendancePage() {
                     </table>
 
                     {/* --- EMPTY STATE / LOADING STATE --- */}
-                    {todayLogs.length === 0 && (
+                    {sortedLogs.length === 0 && (
                         <div className="py-24 text-center space-y-3">
                             <div className="bg-slate-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto border border-slate-100">
                                 {fetching ? (
