@@ -443,7 +443,7 @@ export default function AttendancePage() {
                         </thead>
                         <tbody className="divide-y divide-slate-50">
                             <AnimatePresence mode='popLayout'>
-                                {todayLogs.map((log) => (
+                                {sortedLogs.map((log) => (
                                     <motion.tr 
                                         layout
                                         key={log._id}
