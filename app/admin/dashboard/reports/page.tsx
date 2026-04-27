@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { 
-    Search, FileText, 
-    Calendar as CalendarIcon, User, Loader2, ArrowRight, FileDown
+import {
+    Search, FileText, Target, Timer, Flag, CheckCircle,
+    Calendar as CalendarIcon, User, Loader2, ArrowRight, FileDown, ChevronDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import jsPDF from 'jspdf';
@@ -70,6 +70,12 @@ interface jsPDFCustom extends jsPDF {
     }
 }
 
+interface IStudent {
+    _id: string;
+    studentId: string;
+    fullName: string;
+}
+
 interface ITimeLog {
     _id: string;
     studentId: string;
@@ -83,6 +89,7 @@ interface ITimeLog {
 
 export default function ReportsPage() {
     const [logs, setLogs] = useState<ITimeLog[]>([]);
+    const [students, setStudents] = useState<IStudent[]>([]);
     const [loading, setLoading] = useState(false);
     const [filters, setFilters] = useState({
         studentId: '',
@@ -95,7 +102,7 @@ export default function ReportsPage() {
         const doc = new jsPDF('l', 'mm', 'a4') as jsPDFCustom;
         const pageWidth = 297;
         const centerX = pageWidth / 2;
-        const prmsuLogo = "/prmsu.png"; 
+        const prmsuLogo = "/prmsu.png";
         const ccitLogo = "/ccit-logo.png";
 
         // 2. REUSABLE HEADER (Removed [cite] markers and fixed unused 'data' warning)
@@ -117,25 +124,25 @@ export default function ReportsPage() {
 
             doc.setFontSize(11);
             // Dynamic period text based on filters
-            const period = filters.startDate && filters.endDate 
-                ? `${filters.startDate} to ${filters.endDate}` 
+            const period = filters.startDate && filters.endDate
+                ? `${filters.startDate} to ${filters.endDate}`
                 : "__________________________________________";
-            
+
             doc.text("Office/Department:____________________________________________________________", 22, 45);
             doc.text(`Period: ${period}`, 22, 53);
         };
 
-        const sortedLogs = [...logs].sort((a, b) => 
+        const sortedLogs = [...logs].sort((a, b) =>
             new Date(a.date).getTime() - new Date(b.date).getTime()
         );
 
         const tableData = sortedLogs.map(log => [
-            log.date, 
-            log.fullName, 
-            log.amIn || '', log.amOut || '', '', 
-            log.pmIn || '', log.pmOut || '', '', 
-            log.otIn || '', log.otOut || '', ''  
-        ]); 
+            log.date,
+            log.fullName,
+            log.amIn || '', log.amOut || '', '',
+            log.pmIn || '', log.pmOut || '', '',
+            log.otIn || '', log.otOut || '', ''
+        ]);
 
         while (tableData.length < 20) {
             tableData.push(['', '', '', '', '', '', '', '', '', '', '']);
@@ -148,36 +155,36 @@ export default function ReportsPage() {
                 [
                     { content: 'Date', rowSpan: 2, styles: { valign: 'middle', halign: 'center' } },
                     { content: 'Name', rowSpan: 2, styles: { valign: 'middle', halign: 'center' } },
-                    { content: 'A.M', colSpan: 3, styles: { halign: 'center' } }, 
-                    { content: 'P.M', colSpan: 3, styles: { halign: 'center' } }, 
-                    { content: 'Overtime', colSpan: 3, styles: { halign: 'center' } } 
+                    { content: 'A.M', colSpan: 3, styles: { halign: 'center' } },
+                    { content: 'P.M', colSpan: 3, styles: { halign: 'center' } },
+                    { content: 'Overtime', colSpan: 3, styles: { halign: 'center' } }
                 ],
                 [
-                    'In', 'Out', 'Signature', 
-                    'In', 'Out', 'Signature', 
+                    'In', 'Out', 'Signature',
+                    'In', 'Out', 'Signature',
                     'In', 'Out', 'Signature'
                 ]
             ],
             body: tableData,
             theme: 'grid',
-            styles: { 
-                font: "times", 
-                fontSize: 10, 
-                cellPadding: 2, 
-                lineColor: [0, 0, 0], 
+            styles: {
+                font: "times",
+                fontSize: 10,
+                cellPadding: 2,
+                lineColor: [0, 0, 0],
                 lineWidth: 0.1,
                 textColor: [0, 0, 0]
             },
-            headStyles: { 
-                fillColor: [255, 255, 255], 
+            headStyles: {
+                fillColor: [255, 255, 255],
                 fontStyle: 'bold',
-                halign: 'center' 
+                halign: 'center'
             },
             columnStyles: {
                 0: { cellWidth: 22 },
-                1: { 
-                    cellWidth: 60, 
-                    overflow: 'linebreak' 
+                1: {
+                    cellWidth: 60,
+                    overflow: 'linebreak'
                 },
             },
             // 3. FIXED: Properly type the callback and call drawHeader
@@ -199,9 +206,13 @@ export default function ReportsPage() {
         };
 
         const actualTotal = calc(log.amIn, log.amOut) + calc(log.pmIn, log.pmOut) + calc(log.otIn, log.otOut);
-        
-        const cappedTotal = Math.min(actualTotal, 8); 
-        
+
+        const logDate = new Date(log.date);
+        const month = logDate.getMonth();
+        const hourCap = (month >= 2 && month <= 4) ? 10 : 8; // March (2), April (3), May (4)
+
+        const cappedTotal = Math.min(actualTotal, hourCap);
+
         return cappedTotal.toFixed(2);
     };
 
@@ -221,6 +232,19 @@ export default function ReportsPage() {
     }, [filters]);
 
     useEffect(() => {
+        const fetchStudents = async () => {
+            try {
+                const res = await fetch('/api/students');
+                const data = await res.json();
+                setStudents(data.data || []);
+            } catch (error) {
+                console.error("Fetch Students Error:", error);
+            }
+        };
+        fetchStudents();
+    }, []);
+
+    useEffect(() => {
         fetchReports();
     }, [fetchReports])
 
@@ -228,10 +252,40 @@ export default function ReportsPage() {
         return logs.reduce((acc, log) => acc + parseFloat(calculateRowTotal(log)), 0).toFixed(2);
     }, [logs]);
 
+    const completionStats = useMemo(() => {
+        const total = parseFloat(totalAccumulatedHours);
+        const target = 600;
+        const remaining = Math.max(0, target - total);
+
+        const hoursPerDay = 8;
+        const workDaysNeeded = Math.ceil(remaining / hoursPerDay);
+        const weeks = Math.floor(workDaysNeeded / 5);
+        const days = workDaysNeeded % 5;
+
+        let targetDateObj = new Date();
+        let addedDays = 0;
+        while (addedDays < workDaysNeeded) {
+            targetDateObj.setDate(targetDateObj.getDate() + 1);
+            if (targetDateObj.getDay() !== 0 && targetDateObj.getDay() !== 6) {
+                addedDays++;
+            }
+        }
+
+        return {
+            remaining: remaining.toFixed(2),
+            weeks,
+            days,
+            targetDate: remaining > 0
+                ? targetDateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                : 'Requirement Met',
+            percentage: Math.min(100, (total / target) * 100).toFixed(1)
+        };
+    }, [totalAccumulatedHours]);
+
     if (initialFetch) return <ReportsSkeleton />;
 
     return (
-        <motion.div 
+        <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             className="space-y-8 p-2"
@@ -247,7 +301,7 @@ export default function ReportsPage() {
                     </p>
                 </div>
                 <div className="flex gap-3">
-                    <motion.button 
+                    <motion.button
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={handleExportPDF}
@@ -259,7 +313,7 @@ export default function ReportsPage() {
             </header>
 
             {/* Filter Card */}
-            <motion.section 
+            <motion.section
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.1 }}
@@ -268,24 +322,35 @@ export default function ReportsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
                     <div className="space-y-2">
                         <label className="text-[10px] font-black uppercase text-slate-400 ml-1 flex items-center gap-2">
-                            <User size={12} /> Student ID
+                            <User size={12} /> Select Student
                         </label>
-                        <input 
-                            type="text" 
-                            placeholder="Enter Student ID..."
-                            className="w-full bg-slate-50 border text-slate-500 border-slate-100 rounded-2xl px-5 py-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
-                            onChange={(e) => setFilters({...filters, studentId: e.target.value})}
-                        />
+                        <div className="relative">
+                            <select
+                                value={filters.studentId}
+                                className="w-full bg-slate-50 border text-slate-500 border-slate-100 rounded-2xl px-5 py-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all appearance-none cursor-pointer"
+                                onChange={(e) => setFilters({ ...filters, studentId: e.target.value })}
+                            >
+                                <option value="">All Students</option>
+                                {students.map((s) => (
+                                    <option key={s._id} value={s.studentId}>
+                                        {s.fullName}
+                                    </option>
+                                ))}
+                            </select>
+                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                                <ChevronDown size={16} />
+                            </div>
+                        </div>
                     </div>
 
                     <div className="space-y-2">
                         <label className="text-[10px] font-black uppercase text-slate-400 ml-1 flex items-center gap-2">
                             <CalendarIcon size={12} /> Start Date
                         </label>
-                        <input 
-                            type="date" 
+                        <input
+                            type="date"
                             className="w-full bg-slate-50 border text-slate-500 border-slate-100 rounded-2xl px-5 py-3 text-sm font-bold focus:outline-none focus:border-emerald-500"
-                            onChange={(e) => setFilters({...filters, startDate: e.target.value})}
+                            onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
                         />
                     </div>
 
@@ -293,14 +358,14 @@ export default function ReportsPage() {
                         <label className="text-[10px] font-black uppercase text-slate-400 ml-1 flex items-center gap-2">
                             <CalendarIcon size={12} /> End Date
                         </label>
-                        <input 
-                            type="date" 
+                        <input
+                            type="date"
                             className="w-full bg-slate-50 border text-slate-500 border-slate-100 rounded-2xl px-5 py-3 text-sm font-bold focus:outline-none focus:border-emerald-500"
-                            onChange={(e) => setFilters({...filters, endDate: e.target.value})}
+                            onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
                         />
                     </div>
 
-                    <motion.button 
+                    <motion.button
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={fetchReports}
@@ -313,8 +378,60 @@ export default function ReportsPage() {
                 </div>
             </motion.section>
 
+            {/* Completion Tracking Cards */}
+            <AnimatePresence>
+                {filters.studentId && logs.length > 0 && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
+                    >
+                        <div className="bg-white p-6 rounded-4xl border border-slate-100 shadow-sm flex items-center gap-4">
+                            <div className="bg-blue-50 p-3 rounded-2xl text-blue-600">
+                                <Target size={20} />
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Overall Progress</p>
+                                <p className="text-xl font-black text-slate-900">{completionStats.percentage}%</p>
+                            </div>
+                        </div>
+
+                        <div className="bg-white p-6 rounded-4xl border border-slate-100 shadow-sm flex items-center gap-4">
+                            <div className="bg-amber-50 p-3 rounded-2xl text-amber-600">
+                                <Timer size={20} />
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Remaining Hours</p>
+                                <p className="text-xl font-black text-slate-900">{completionStats.remaining}h</p>
+                            </div>
+                        </div>
+
+                        <div className="bg-white p-6 rounded-4xl border border-slate-100 shadow-sm flex items-center gap-4">
+                            <div className="bg-indigo-50 p-3 rounded-2xl text-indigo-600">
+                                <CalendarIcon size={20} />
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Estimated Duration</p>
+                                <p className="text-xl font-black text-slate-900">{completionStats.weeks}w {completionStats.days}d</p>
+                            </div>
+                        </div>
+
+                        <div className="bg-white p-6 rounded-4xl border border-slate-100 shadow-sm flex items-center gap-4">
+                            <div className="bg-emerald-50 p-3 rounded-2xl text-emerald-600">
+                                {parseFloat(completionStats.remaining) <= 0 ? <CheckCircle size={20} /> : <Flag size={20} />}
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Target Completion</p>
+                                <p className="text-xl font-black text-slate-900">{completionStats.targetDate}</p>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             {/* Summary & Table */}
-            <motion.div 
+            <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.2 }}
@@ -327,7 +444,7 @@ export default function ReportsPage() {
                     </div>
                     <div className="text-right">
                         <p className="text-[10px] font-black text-emerald-600 uppercase">Total Hours for Period</p>
-                        <motion.p 
+                        <motion.p
                             key={totalAccumulatedHours}
                             initial={{ scale: 1.1, color: '#10b981' }}
                             animate={{ scale: 1, color: '#0f172a' }}
@@ -353,7 +470,7 @@ export default function ReportsPage() {
                         <tbody className="divide-y divide-slate-50">
                             <AnimatePresence mode="popLayout">
                                 {logs.length > 0 ? logs.map((log, index) => (
-                                    <motion.tr 
+                                    <motion.tr
                                         key={log._id}
                                         initial={{ opacity: 0, x: -10 }}
                                         animate={{ opacity: 1, x: 0 }}
